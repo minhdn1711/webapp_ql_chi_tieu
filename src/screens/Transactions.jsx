@@ -106,7 +106,7 @@ const Transactions = () => {
         
         {filteredTransactions.map((t, index) => {
           const showDate = index === 0 || filteredTransactions[index - 1].date !== t.date;
-          const category = CATEGORIES[t.categoryId];
+          const category = CATEGORIES[t.categoryId] || CATEGORIES['other'];
           
           return (
             <React.Fragment key={t.id}>

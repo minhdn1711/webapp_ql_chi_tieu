@@ -44,7 +44,7 @@ const Dashboard = () => {
     
     // Convert to array and sort by amount descending
     const sorted = Object.entries(grouped)
-      .map(([id, amount]) => ({ id, amount, ...CATEGORIES[id] }))
+      .map(([id, amount]) => ({ id, amount, ...(CATEGORIES[id] || CATEGORIES['other']) }))
       .sort((a, b) => b.amount - a.amount);
       
     // Get top 4 or group others

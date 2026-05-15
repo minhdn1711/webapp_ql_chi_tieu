@@ -7,7 +7,8 @@ export const CATEGORIES = {
   appliances: { id: 'appliances', label: 'Gia dụng', color: '#D4878A' },
   savings: { id: 'savings', label: 'Tiết kiệm', color: '#8FAF96' },
   salary: { id: 'salary', label: 'Lương', color: 'var(--primary-green)' },
-  bonus: { id: 'bonus', label: 'Thưởng', color: '#E0A96D' }
+  bonus: { id: 'bonus', label: 'Thưởng', color: '#E0A96D' },
+  other: { id: 'other', label: 'Khác', color: 'var(--text-muted)' }
 };
 
 export const MOCK_GOALS = [
