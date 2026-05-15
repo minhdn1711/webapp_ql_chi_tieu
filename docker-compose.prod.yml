@@ -14,7 +14,7 @@ services:
     env_file:
       - .env
     networks:
-      - webdongho-network
+      - webdongho_webdongho-network
     restart: always
 
   frontend:
@@ -30,10 +30,9 @@ services:
     env_file:
       - .env
     networks:
-      - webdongho-network
+      - webdongho_webdongho-network
     restart: always
 
 networks:
-  webdongho-network:
+  webdongho_webdongho-network:
     external: true
-    name: webdongho_webdongho-network
