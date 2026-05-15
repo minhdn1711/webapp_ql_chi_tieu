@@ -7,14 +7,18 @@ services:
       dockerfile: Dockerfile
     image: ghcr.io/minhdn1711/webapp_ql_chi_tieu-backend:main
     container_name: couple-expense-backend
-    # ports:
-    #   - "3000:3000"
     volumes:
       - ./data:/app/data
     env_file:
       - .env
     networks:
       - webdongho_webdongho-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
     restart: always
 
   frontend:
@@ -23,14 +27,18 @@ services:
       dockerfile: Dockerfile
     image: ghcr.io/minhdn1711/webapp_ql_chi_tieu-frontend:main
     container_name: couple-expense-frontend
-    # ports:
-    #   - "80:80"
     depends_on:
       - backend
     env_file:
       - .env
     networks:
       - webdongho_webdongho-network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
     restart: always
 
 networks:
