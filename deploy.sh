@@ -21,11 +21,19 @@ fi
 echo ">>> 2. Đảm bảo thư mục dữ liệu tồn tại..."
 mkdir -p data
 
+# Check for both 'docker-compose' and 'docker compose'
+DOCKER_COMPOSE="docker compose"
+if ! docker compose version >/dev/null 2>&1; then
+    if [ -x "$(command -v docker-compose)" ]; then
+        DOCKER_COMPOSE="docker-compose"
+    fi
+fi
+
 echo ">>> 3. Đang dừng các container cũ để đảm bảo sạch sẽ..."
-docker-compose -f docker-compose.prod.yml down
+$DOCKER_COMPOSE -f docker-compose.prod.yml down
 
 echo ">>> 4. Đang build và khởi động lại các container..."
-docker-compose -f docker-compose.prod.yml up -d --build
+$DOCKER_COMPOSE -f docker-compose.prod.yml up -d --build
 
 echo ">>> 5. Đang dọn dẹp các image và rác Docker cũ..."
 docker image prune -f

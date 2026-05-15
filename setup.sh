@@ -28,11 +28,18 @@ if ! [ -x "$(command -v docker)" ]; then
     echo ">>> Đã cài đặt Docker. Vui lòng logout và login lại nếu gặp lỗi quyền truy cập."
 fi
 
-if ! [ -x "$(command -v docker-compose)" ]; then
-    echo ">>> Docker Compose chưa được cài đặt. Đang tiến hành cài đặt..."
-    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    sudo chmod +x /usr/local/bin/docker-compose
-    echo ">>> Đã cài đặt Docker Compose."
+# Check for both 'docker-compose' and 'docker compose'
+DOCKER_COMPOSE="docker compose"
+if ! docker compose version >/dev/null 2>&1; then
+    if [ -x "$(command -v docker-compose)" ]; then
+        DOCKER_COMPOSE="docker-compose"
+    else
+        echo ">>> Docker Compose chưa được cài đặt. Đang tiến hành cài đặt..."
+        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        DOCKER_COMPOSE="docker-compose"
+        echo ">>> Đã cài đặt Docker Compose."
+    fi
 fi
 
 # 1. Tự động tạo mạng webdongho_webdongho-network nếu chưa có
@@ -57,7 +64,7 @@ mkdir -p data
 
 # 4. Khởi động Docker
 echo ">>> Đang khởi động các container Docker với file $COMPOSE_FILE..."
-docker-compose -f $COMPOSE_FILE up -d --build
+$DOCKER_COMPOSE -f $COMPOSE_FILE up -d --build
 
 # 5. Kiểm tra sức khỏe hệ thống
 echo ">>> Đang đợi các dịch vụ khởi động (5 giây)..."
