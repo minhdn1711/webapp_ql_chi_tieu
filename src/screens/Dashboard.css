@@ -131,3 +131,34 @@
   border-radius: 4px;
   transition: width 1s ease-in-out;
 }
+
+.progress-bar-bg.mini {
+  height: 6px;
+}
+
+.payer-analysis h3 {
+  font-size: 16px;
+  color: var(--text-dark);
+}
+
+.payer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.payer-item {
+  width: 100%;
+}
+
+.payer-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.payer-amount {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dark);
+}

@@ -9,7 +9,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// API: Lấy danh sách giao dịch
 app.get('/api/transactions', (req, res) => {
   db.all('SELECT * FROM transactions ORDER BY date DESC, id DESC', [], (err, rows) => {
     if (err) {
@@ -17,6 +16,18 @@ app.get('/api/transactions', (req, res) => {
       return;
     }
     res.json(rows);
+  });
+});
+
+// API: Lấy chi tiết một giao dịch (bao gồm splits)
+app.get('/api/transactions/:id', (req, res) => {
+  const { id } = req.params;
+  db.get('SELECT * FROM transactions WHERE id = ?', [id], (err, transaction) => {
+    if (err || !transaction) return res.status(404).json({ error: 'Không tìm thấy giao dịch' });
+    
+    db.all('SELECT person_name as name, amount FROM splits WHERE transaction_id = ?', [id], (err, splits) => {
+      res.json({ ...transaction, splits: splits || [] });
+    });
   });
 });
 
@@ -204,15 +215,33 @@ app.patch('/api/splits/:id/pay', (req, res) => {
   });
 });
 
-// Cập nhật giao dịch
+// Cập nhật giao dịch (có hỗ trợ cập nhật splits)
 app.put('/api/transactions/:id', (req, res) => {
   const { id } = req.params;
-  const { date, title, amount, type, categoryId, by } = req.body;
+  const { date, title, amount, type, categoryId, by, splits } = req.body;
   
-  const sql = 'UPDATE transactions SET date = ?, title = ?, amount = ?, type = ?, categoryId = ?, "by" = ? WHERE id = ?';
-  db.run(sql, [date, title, amount, type, categoryId, by, id], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ success: true, changes: this.changes });
+  db.serialize(() => {
+    // 1. Cập nhật thông tin chính
+    const sql = 'UPDATE transactions SET date = ?, title = ?, amount = ?, type = ?, categoryId = ?, "by" = ? WHERE id = ?';
+    db.run(sql, [date, title, amount, type, categoryId, by, id], function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+
+      // 2. Xóa các splits cũ
+      db.run('DELETE FROM splits WHERE transaction_id = ?', id, (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        // 3. Thêm các splits mới nếu có
+        if (splits && Array.isArray(splits)) {
+          const splitStmt = db.prepare('INSERT INTO splits (transaction_id, person_name, amount) VALUES (?, ?, ?)');
+          splits.forEach(s => {
+            splitStmt.run(id, s.name, s.amount);
+          });
+          splitStmt.finalize();
+        }
+
+        res.json({ success: true });
+      });
+    });
   });
 });
 

@@ -88,6 +88,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/add" element={<AddTransaction />} />
+          <Route path="/edit/:id" element={<AddTransaction isEdit={true} />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/goals" element={<SavingGoals />} />
           <Route path="/debts" element={<Debts />} />

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Filter, ShoppingBag, Utensils, Zap, Coffee, PiggyBank, Home as HomeIcon, CreditCard, Banknote, Trash2 } from 'lucide-react';
+import { Filter, ShoppingBag, Utensils, Zap, Coffee, PiggyBank, Home as HomeIcon, CreditCard, Banknote, Trash2, Edit2, Search, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { formatCurrency } from '../utils/format';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../context/CategoryContext';
@@ -48,21 +49,40 @@ const Transactions = () => {
     }, {});
   }, [categories]);
 
-  const [selectedMonth, setSelectedMonth] = useState('2026-05');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // Default to current month
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
+  
+  // Advanced Search states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   
   // Confirm delete modal state
   const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, id: null });
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
-      if (selectedMonth !== 'all' && !t.date.startsWith(selectedMonth)) return false;
+      // 1. Month filter (only if not using specific date range)
+      if (!startDate && !endDate && selectedMonth !== 'all' && !t.date.startsWith(selectedMonth)) return false;
+      
+      // 2. Date range filter
+      if (startDate && t.date < startDate) return false;
+      if (endDate && t.date > endDate) return false;
+
+      // 3. Category filter
       if (selectedCategory !== 'all' && t.categoryId !== selectedCategory) return false;
+      
+      // 4. Type filter
       if (selectedType !== 'all' && t.type !== selectedType) return false;
+
+      // 5. Search query
+      if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      
       return true;
     }).sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [selectedMonth, selectedCategory, selectedType, transactions]);
+  }, [selectedMonth, selectedCategory, selectedType, searchQuery, startDate, endDate, transactions]);
 
   const totalIncome = useMemo(() => {
     return filteredTransactions
@@ -78,38 +98,94 @@ const Transactions = () => {
 
   return (
     <div className="screen-container">
+      {/* Search Bar */}
+      <div className="search-bar-container mb-4">
+        <div className="search-input-wrapper">
+          <Search size={18} className="search-icon" />
+          <input 
+            type="text" 
+            placeholder="Tìm kiếm giao dịch..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && <X size={18} className="clear-icon" onClick={() => setSearchQuery('')} />}
+        </div>
+        <button 
+          className={`filter-toggle-btn ${showAdvancedFilters ? 'active' : ''}`}
+          onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+        >
+          <Filter size={18} />
+        </button>
+      </div>
+
       {/* Filters */}
-      <div className="filters-grid mb-6">
-        <select
-          className="month-filter"
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-        >
-          <option value="all">Tất cả thời gian</option>
-          <option value="2026-05">Tháng 5, 2026</option>
-          <option value="2026-04">Tháng 4, 2026</option>
-        </select>
+      <div className={`filters-grid mb-6 ${showAdvancedFilters ? 'expanded' : ''}`}>
+        <div className="filter-item">
+          <label className="mini-label">Theo tháng</label>
+          <select
+            className="month-filter"
+            value={selectedMonth}
+            onChange={(e) => {
+              setSelectedMonth(e.target.value);
+              setStartDate('');
+              setEndDate('');
+            }}
+          >
+            <option value="all">Tất cả thời gian</option>
+            <option value="2026-05">Tháng 5, 2026</option>
+            <option value="2026-04">Tháng 4, 2026</option>
+          </select>
+        </div>
 
-        <select
-          className="month-filter"
-          value={selectedType}
-          onChange={(e) => setSelectedType(e.target.value)}
-        >
-          <option value="all">Tất cả loại</option>
-          <option value="expense">Khoản chi (-)</option>
-          <option value="income">Khoản thu (+)</option>
-        </select>
+        <div className="filter-item">
+          <label className="mini-label">Loại</label>
+          <select
+            className="month-filter"
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+          >
+            <option value="all">Tất cả loại</option>
+            <option value="expense">Khoản chi (-)</option>
+            <option value="income">Khoản thu (+)</option>
+          </select>
+        </div>
 
-        <select 
-          className="month-filter"
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-        >
-          <option value="all">Tất cả</option>
-          {categories.map(cat => (
-            <option key={cat.id} value={cat.id}>{cat.label}</option>
-          ))}
-        </select>
+        <div className="filter-item">
+          <label className="mini-label">Danh mục</label>
+          <select 
+            className="month-filter"
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+          >
+            <option value="all">Tất cả</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {showAdvancedFilters && (
+          <>
+            <div className="filter-item">
+              <label className="mini-label">Từ ngày</label>
+              <input 
+                type="date" 
+                className="month-filter" 
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+            <div className="filter-item">
+              <label className="mini-label">Đến ngày</label>
+              <input 
+                type="date" 
+                className="month-filter" 
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Summary for the month */}
@@ -158,6 +234,14 @@ const Transactions = () => {
                   {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)} đ
                 </div>
                 <div className="t-actions">
+                  <Link 
+                    to={`/edit/${t.id}`}
+                    className="btn-delete-small"
+                    style={{ color: 'var(--text-muted)' }}
+                    title="Sửa"
+                  >
+                    <Edit2 size={16} />
+                  </Link>
                   <button
                     className="btn-delete-small"
                     onClick={() => setConfirmDelete({ isOpen: true, id: t.id })}

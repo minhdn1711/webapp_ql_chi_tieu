@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTransactions } from '../hooks/useTransactions';
-import { AlertCircle, X } from 'lucide-react';
+import { AlertCircle, X, Loader2 } from 'lucide-react';
 import { formatInput, getRawAmount } from '../utils/format';
 import { useToast } from '../context/ToastContext';
 import { useCategories } from '../context/CategoryContext';
 import { Link } from 'react-router-dom';
 import './AddTransaction.css';
 
-const AddTransaction = () => {
+const AddTransaction = ({ isEdit = false }) => {
   const navigate = useNavigate();
-  const { addTransaction } = useTransactions();
+  const { id } = useParams();
+  const { addTransaction, updateTransaction } = useTransactions();
   const { addToast } = useToast();
   const { categories } = useCategories();
   
@@ -27,6 +28,35 @@ const AddTransaction = () => {
   const [newPersonName, setNewPersonName] = useState('');
   
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(isEdit);
+
+  // Fetch data if in edit mode
+  React.useEffect(() => {
+    if (isEdit && id) {
+      fetch(`/api/transactions/${id}`)
+        .then(res => res.json())
+        .then(data => {
+          setType(data.type);
+          setAmount(formatInput(data.amount));
+          setCategoryId(data.categoryId);
+          setPaidBy(data.by);
+          setDate(data.date);
+          setTitle(data.title);
+          if (data.splits && data.splits.length > 0) {
+            setIsSplit(true);
+            setSplitPeople(data.splits.map(p => ({ 
+              name: p.name, 
+              amount: formatInput(p.amount) 
+            })));
+          }
+          setIsLoading(false);
+        })
+        .catch(err => {
+          addToast('Không thể tải thông tin giao dịch', 'error');
+          navigate('/transactions');
+        });
+    }
+  }, [isEdit, id, navigate, addToast]);
 
   const addPerson = () => {
     if (newPersonName.trim()) {
@@ -97,9 +127,20 @@ const AddTransaction = () => {
       })) : null
     };
 
-    addTransaction(newTransaction);
-    addToast('Đã thêm giao dịch mới!', 'success');
-    navigate('/');
+    const handleSave = async () => {
+      let res;
+      if (isEdit) {
+        res = await updateTransaction(id, newTransaction);
+        if (res.ok) addToast('Đã cập nhật giao dịch!', 'success');
+      } else {
+        res = await addTransaction(newTransaction);
+        if (res.ok) addToast('Đã thêm giao dịch mới!', 'success');
+      }
+      
+      if (res.ok) navigate(isEdit ? '/transactions' : '/');
+    };
+
+    handleSave();
   };
 
   const handleTypeChange = (newType) => {
@@ -107,8 +148,15 @@ const AddTransaction = () => {
     setCategoryId(''); // Reset category when type changes
   };
 
+  if (isLoading) return (
+    <div className="screen-container flex-center" style={{height: '60vh'}}>
+      <Loader2 className="animate-spin" size={32} color="var(--primary-green)" />
+    </div>
+  );
+
   return (
     <div className="screen-container">
+      <h2 className="mb-4">{isEdit ? 'Sửa giao dịch' : 'Thêm giao dịch'}</h2>
       <div className="type-toggle mb-6">
         <button 
           className={`toggle-btn ${type === 'expense' ? 'active expense' : ''}`}
@@ -254,7 +302,9 @@ const AddTransaction = () => {
           </div>
         )}
 
-        <button type="submit" className="btn-primary">Lưu giao dịch</button>
+        <button type="submit" className="btn-primary">
+          {isEdit ? 'Cập nhật giao dịch' : 'Lưu giao dịch'}
+        </button>
       </form>
     </div>
   );

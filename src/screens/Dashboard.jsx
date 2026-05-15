@@ -11,7 +11,7 @@ const Dashboard = () => {
   const { categories } = useCategories();
   const [goals, setGoals] = useState([]);
   const [debts, setDebts] = useState([]);
-  
+
   // Create a lookup map for categories
   const categoriesMap = useMemo(() => {
     return categories.reduce((acc, cat) => {
@@ -51,22 +51,35 @@ const Dashboard = () => {
       acc[curr.categoryId] = (acc[curr.categoryId] || 0) + curr.amount;
       return acc;
     }, {});
-    
-    // Convert to array and sort by amount descending
+
     const sorted = Object.entries(grouped)
-      .map(([id, amount]) => ({ 
-        id, 
-        amount, 
-        ...(categoriesMap[id] || { label: 'Khác', color: 'var(--text-muted)' }) 
+      .map(([id, amount]) => ({
+        id,
+        amount,
+        ...(categoriesMap[id] || { label: 'Khác', color: 'var(--text-muted)' })
       }))
       .sort((a, b) => b.amount - a.amount);
-      
-    // Get top 4 or group others
+
     if (sorted.length <= 4) return sorted;
     const top3 = sorted.slice(0, 3);
     const othersAmount = sorted.slice(3).reduce((acc, curr) => acc + curr.amount, 0);
     return [...top3, { id: 'other', label: 'Khác', color: 'var(--text-muted)', amount: othersAmount }];
   }, [currentMonthTransactions, categoriesMap]);
+
+  // Calculate spending by payer
+  const payerSpending = useMemo(() => {
+    const expenses = currentMonthTransactions.filter(t => t.type === 'expense');
+    const grouped = expenses.reduce((acc, curr) => {
+      acc[curr.by] = (acc[curr.by] || 0) + curr.amount;
+      return acc;
+    }, { me: 0, partner: 0, shared: 0 });
+
+    return [
+      { id: 'me', label: 'Tôi chi', amount: grouped.me, color: 'var(--primary-green)' },
+      { id: 'partner', label: 'Vợ/Chồng chi', amount: grouped.partner, color: 'var(--accent-pink)' },
+      { id: 'shared', label: 'Quỹ chung', amount: grouped.shared, color: '#3B82F6' }
+    ].sort((a, b) => b.amount - a.amount);
+  }, [currentMonthTransactions]);
 
   // Find max spending for chart relative heights
   const maxSpending = Math.max(...categorySpending.map(c => c.amount), 1);
@@ -97,12 +110,12 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-        
+
         {totalDebt > 0 && (
-          <NavLink to="/debts" className="card debt-summary-card flex-between" style={{textDecoration: 'none', color: 'inherit', marginTop: '-8px'}}>
+          <NavLink to="/debts" className="card debt-summary-card flex-between" style={{ textDecoration: 'none', color: 'inherit', marginTop: '-8px' }}>
             <div>
-              <p className="form-label text-muted" style={{marginBottom: '4px'}}>Bạn bè đang nợ</p>
-              <h3 className="debt-amount-text" style={{color: 'var(--primary-green)', fontWeight: '800', margin: 0}}>+{formatCurrency(totalDebt)} đ</h3>
+              <p className="form-label text-muted" style={{ marginBottom: '4px' }}>Bạn bè đang nợ</p>
+              <h3 className="debt-amount-text" style={{ color: 'var(--primary-green)', fontWeight: '800', margin: 0 }}>+{formatCurrency(totalDebt)} đ</h3>
             </div>
             <ChevronRight size={20} color="var(--primary-green)" />
           </NavLink>
@@ -119,11 +132,11 @@ const Dashboard = () => {
           <div className="chart-bars">
             {categorySpending.map(cat => (
               <div className="bar-group" key={cat.id}>
-                <div 
-                  className="bar" 
+                <div
+                  className="bar"
                   style={{
-                    height: `${Math.max((cat.amount / maxSpending) * 100, 10)}%`, 
-                    backgroundColor: cat.color 
+                    height: `${Math.max((cat.amount / maxSpending) * 100, 10)}%`,
+                    backgroundColor: cat.color
                   }}
                   title={`${formatCurrency(cat.amount)} đ`}
                 ></div>
@@ -131,6 +144,30 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Payer Analysis Section */}
+      <div className="card payer-analysis mb-6">
+        <h3 className="mb-4">Thu chi cá nhân</h3>
+        <div className="payer-list">
+          {payerSpending.map(payer => {
+            const payerPercent = totalExpense > 0 ? Math.round((payer.amount / totalExpense) * 100) : 0;
+            return (
+              <div key={payer.id} className="payer-item">
+                <div className="flex-between mb-1">
+                  <span className="payer-label">{payer.label}</span>
+                  <span className="payer-amount">{formatCurrency(payer.amount)} đ ({payerPercent}%)</span>
+                </div>
+                <div className="progress-bar-bg mini">
+                  <div
+                    className="progress-bar-fill"
+                    style={{ width: `${payerPercent}%`, backgroundColor: payer.color }}
+                  ></div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -142,7 +179,7 @@ const Dashboard = () => {
             Xem tất cả <ChevronRight size={16} />
           </NavLink>
         </div>
-        
+
         <div className="goal-item">
           <div className="flex-between mb-2">
             <div className="flex-row gap-2">
@@ -152,7 +189,7 @@ const Dashboard = () => {
             <span className="font-semibold text-primary">{goalPercent}%</span>
           </div>
           <div className="progress-bar-bg">
-            <div className="progress-bar-fill" style={{width: `${goalPercent}%`}}></div>
+            <div className="progress-bar-fill" style={{ width: `${goalPercent}%` }}></div>
           </div>
           <p className="text-muted mt-2 text-right">Đã gom: {(topGoal.current / 1000000).toFixed(1)}Tr / {(topGoal.target / 1000000).toFixed(1)}Tr</p>
         </div>
