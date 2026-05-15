@@ -5,10 +5,10 @@
 echo ">>> 1. Đang cập nhật mã nguồn từ GitHub..."
 git pull origin main
 
-# Đảm bảo mạng webdongho-network tồn tại
-if ! docker network ls | grep -q "webdongho-network"; then
-    echo ">>> Đang tạo mạng Docker: webdongho-network..."
-    docker network create webdongho-network
+# Đảm bảo mạng webdongho_webdongho-network tồn tại
+if ! docker network ls | grep -q "webdongho_webdongho-network"; then
+    echo ">>> Đang tạo mạng Docker: webdongho_webdongho-network..."
+    docker network create webdongho_webdongho-network
 fi
 
 # Đảm bảo file .env tồn tại

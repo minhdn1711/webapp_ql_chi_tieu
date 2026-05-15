@@ -36,3 +36,4 @@ services:
 networks:
   webdongho-network:
     external: true
+    name: webdongho_webdongho-network

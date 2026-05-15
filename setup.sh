@@ -35,10 +35,10 @@ if ! [ -x "$(command -v docker-compose)" ]; then
     echo ">>> Đã cài đặt Docker Compose."
 fi
 
-# 1. Tự động tạo mạng webdongho-network nếu chưa có
-if ! docker network ls | grep -q "webdongho-network"; then
-    echo ">>> Đang tạo mạng Docker: webdongho-network..."
-    docker network create webdongho-network
+# 1. Tự động tạo mạng webdongho_webdongho-network nếu chưa có
+if ! docker network ls | grep -q "webdongho_webdongho-network"; then
+    echo ">>> Đang tạo mạng Docker: webdongho_webdongho-network..."
+    docker network create webdongho_webdongho-network
 fi
 
 # 2. Kiểm tra và tạo file .env
