@@ -120,26 +120,57 @@ app.patch('/api/splits/:id/pay', (req, res) => {
     JOIN transactions t ON s.transaction_id = t.id 
     WHERE s.id = ?`, [id], (err, split) => {
     
-    if (err || !split) return res.status(404).json({ error: 'Không tìm thấy khoản nợ' });
+    if (err || !split) {
+      console.error('Không tìm thấy split ID:', id);
+      return res.status(404).json({ error: 'Không tìm thấy khoản nợ' });
+    }
 
-    const newPaidAmount = split.paid_amount + amount;
+    const currentPaid = Number(split.paid_amount) || 0;
+    const payAmt = Number(amount);
+    const newPaidAmount = currentPaid + payAmt;
     const isPaid = newPaidAmount >= split.amount ? 1 : 0;
 
-    db.serialize(() => {
-      // 2. Cập nhật bảng splits
-      db.run('UPDATE splits SET paid_amount = ?, is_paid = ? WHERE id = ?', [newPaidAmount, isPaid, id]);
+    // 1. Cập nhật bảng splits
+    db.run('UPDATE splits SET paid_amount = ?, is_paid = ? WHERE id = ?', [newPaidAmount, isPaid, id], function(err) {
+      if (err) {
+        console.error('Lỗi cập nhật splits:', err.message);
+        return res.status(500).json({ error: 'Lỗi cập nhật khoản nợ' });
+      }
 
-      // 3. Tự động tạo một Khoản thu (Income) trong bảng transactions
+      // 2. Tự động tạo một Khoản thu (Income) trong bảng transactions
       const incomeTitle = `Thu hồi nợ: ${split.person_name} - ${split.transaction_title}`;
       const today = new Date().toISOString().split('T')[0];
       
       db.run(
         'INSERT INTO transactions (date, title, amount, type, categoryId, "by") VALUES (?, ?, ?, ?, ?, ?)',
-        [today, incomeTitle, amount, 'income', 'other', 'me']
+        [today, incomeTitle, payAmt, 'income', 'other', 'me'],
+        function(err) {
+          if (err) {
+            console.error('Lỗi tạo transaction thu hồi nợ:', err.message);
+            // Vẫn trả về thành công vì bước 1 đã xong
+          }
+          
+          res.json({ 
+            success: true, 
+            isPaid, 
+            newPaidAmount,
+            message: 'Đã cập nhật thanh toán'
+          });
+        }
       );
-
-      res.json({ success: true, isPaid, newPaidAmount });
     });
+  });
+});
+
+// Cập nhật giao dịch
+app.put('/api/transactions/:id', (req, res) => {
+  const { id } = req.params;
+  const { date, title, amount, type, categoryId, by } = req.body;
+  
+  const sql = 'UPDATE transactions SET date = ?, title = ?, amount = ?, type = ?, categoryId = ?, "by" = ? WHERE id = ?';
+  db.run(sql, [date, title, amount, type, categoryId, by, id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true, changes: this.changes });
   });
 });
 
@@ -151,7 +182,29 @@ app.delete('/api/transactions/:id', (req, res) => {
       res.status(500).json({ error: err.message });
       return;
     }
+    // Cũng nên xóa splits liên quan nếu có
+    db.run('DELETE FROM splits WHERE transaction_id = ?', id);
     res.json({ message: 'Đã xóa', changes: this.changes });
+  });
+});
+
+// Cập nhật quỹ tiết kiệm
+app.put('/api/goals/:id', (req, res) => {
+  const { id } = req.params;
+  const { title, target, icon, color } = req.body;
+  const sql = 'UPDATE goals SET title = ?, target = ?, icon = ?, color = ? WHERE id = ?';
+  db.run(sql, [title, target, icon, color, id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true, changes: this.changes });
+  });
+});
+
+// Xóa quỹ tiết kiệm
+app.delete('/api/goals/:id', (req, res) => {
+  const { id } = req.params;
+  db.run('DELETE FROM goals WHERE id = ?', id, function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true, changes: this.changes });
   });
 });
 

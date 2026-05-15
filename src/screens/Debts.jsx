@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Clock, CheckCircle, X } from 'lucide-react';
-import { formatCurrency } from '../utils/format';
+import { formatCurrency, formatInput, getRawAmount } from '../utils/format';
+import { useToast } from '../context/ToastContext';
 import './Debts.css';
 
 const Debts = () => {
@@ -10,6 +11,7 @@ const Debts = () => {
   const [showPayModal, setShowPayModal] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState(null);
   const [payAmount, setPayAmount] = useState('');
+  const { addToast } = useToast();
 
   const fetchDebts = async () => {
     try {
@@ -34,15 +36,20 @@ const Debts = () => {
       const res = await fetch(`/api/splits/${selectedDebt.id}/pay`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: parseInt(payAmount) })
+        body: JSON.stringify({ amount: getRawAmount(payAmount) })
       });
       if (res.ok) {
         setShowPayModal(false);
         setPayAmount('');
+        addToast('Xác nhận nhận tiền thành công!', 'success');
         fetchDebts();
+      } else {
+        const errorData = await res.json();
+        addToast(errorData.error || 'Lỗi không xác định', 'error');
       }
     } catch (err) {
       console.error('Lỗi thanh toán:', err);
+      addToast('Lỗi kết nối máy chủ', 'error');
     }
   };
 
@@ -85,8 +92,8 @@ const Debts = () => {
           </div>
         ) : (
           displayedDebts.map(debt => {
-            const remaining = debt.amount - debt.paid_amount;
-            const progress = Math.round((debt.paid_amount / debt.amount) * 100);
+            const remaining = (debt.amount || 0) - (debt.paid_amount || 0);
+            const progress = debt.amount ? Math.round(((debt.paid_amount || 0) / debt.amount) * 100) : 0;
             
             return (
               <div key={debt.id} className={`card debt-card ${debt.is_paid ? 'paid' : ''}`}>
@@ -98,6 +105,9 @@ const Debts = () => {
                     <div className="debt-details">
                       <h4 className="debt-person">{debt.person_name}</h4>
                       <p className="debt-transaction text-muted">{debt.transaction_title}</p>
+                      <p className="debt-date text-muted" style={{fontSize: '11px', marginTop: '2px'}}>
+                        Ngày chi: {debt.date ? debt.date.split('-').reverse().join('/') : '---'}
+                      </p>
                     </div>
                   </div>
                   <div className="debt-amount-info">
@@ -121,7 +131,7 @@ const Debts = () => {
                     className="btn-pay-action mt-3" 
                     onClick={() => {
                       setSelectedDebt(debt);
-                      setPayAmount(remaining);
+                      setPayAmount(formatInput(remaining));
                       setShowPayModal(true);
                     }}
                   >
@@ -146,11 +156,10 @@ const Debts = () => {
               <div className="form-group">
                 <label>Số tiền nhận được (đ)</label>
                 <input 
-                  type="number" 
+                  type="text" 
                   value={payAmount} 
-                  onChange={e => setPayAmount(e.target.value)}
+                  onChange={e => setPayAmount(formatInput(e.target.value))}
                   placeholder="Nhập số tiền..."
-                  max={(selectedDebt?.amount || 0) - (selectedDebt?.paid_amount || 0)}
                   required
                 />
                 <p className="text-muted mt-2" style={{fontSize: '12px'}}>

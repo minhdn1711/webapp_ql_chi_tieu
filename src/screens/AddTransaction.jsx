@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTransactions } from '../hooks/useTransactions';
 import { AlertCircle, X } from 'lucide-react';
+import { formatInput, getRawAmount } from '../utils/format';
+import { useToast } from '../context/ToastContext';
 import './AddTransaction.css';
 
 const AddTransaction = () => {
   const navigate = useNavigate();
   const { addTransaction } = useTransactions();
+  const { addToast } = useToast();
   
   const [type, setType] = useState('expense');
   const [amount, setAmount] = useState('');
@@ -35,14 +38,15 @@ const AddTransaction = () => {
 
   const updateSplitAmount = (index, val) => {
     const newPeople = [...splitPeople];
-    newPeople[index].amount = val;
+    newPeople[index].amount = formatInput(val);
     setSplitPeople(newPeople);
   };
 
   const autoSplit = () => {
-    if (!amount || splitPeople.length === 0) return;
-    const splitAmount = Math.floor(Number(amount) / (splitPeople.length + 1));
-    const newPeople = splitPeople.map(p => ({ ...p, amount: splitAmount }));
+    const rawAmt = getRawAmount(amount);
+    if (!rawAmt || splitPeople.length === 0) return;
+    const splitAmount = Math.floor(rawAmt / (splitPeople.length + 1));
+    const newPeople = splitPeople.map(p => ({ ...p, amount: formatInput(splitAmount) }));
     setSplitPeople(newPeople);
   };
 
@@ -51,10 +55,20 @@ const AddTransaction = () => {
     setError('');
 
     // Validation
-    if (!amount || isNaN(amount) || Number(amount) <= 0) {
+    const rawAmount = getRawAmount(amount);
+    if (!rawAmount || isNaN(rawAmount) || rawAmount <= 0) {
       setError('Vui lòng nhập số tiền hợp lệ lớn hơn 0.');
       return;
     }
+
+    if (isSplit) {
+      const totalSplit = splitPeople.reduce((sum, p) => sum + getRawAmount(p.amount), 0);
+      if (totalSplit >= rawAmount) {
+        setError('Tổng số tiền chia sẻ cho người khác phải nhỏ hơn tổng số tiền chi.');
+        return;
+      }
+    }
+
     if (!categoryId) {
       setError('Vui lòng chọn danh mục.');
       return;
@@ -70,17 +84,18 @@ const AddTransaction = () => {
     const newTransaction = {
       date,
       title: finalTitle,
-      amount: Number(amount),
+      amount: rawAmount,
       type,
       categoryId,
       by: paidBy,
       splits: isSplit ? splitPeople.map(p => ({ 
         name: p.name, 
-        amount: Number(p.amount) 
+        amount: getRawAmount(p.amount) 
       })) : null
     };
 
     addTransaction(newTransaction);
+    addToast('Đã thêm giao dịch mới!', 'success');
     navigate('/');
   };
 
@@ -119,11 +134,11 @@ const AddTransaction = () => {
         <div className="form-group">
           <label className="form-label">Số tiền (đ) *</label>
           <input 
-            type="number" 
+            type="text" 
             className="form-input amount-input" 
             placeholder="0" 
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => setAmount(formatInput(e.target.value))}
             autoFocus 
           />
         </div>
@@ -231,7 +246,7 @@ const AddTransaction = () => {
                           <span>{person.name}</span>
                           <div className="split-input-wrapper">
                             <input 
-                              type="number" 
+                              type="text" 
                               placeholder="Số tiền..." 
                               value={person.amount}
                               onChange={(e) => updateSplitAmount(index, e.target.value)}

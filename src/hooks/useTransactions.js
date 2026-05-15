@@ -28,9 +28,7 @@ export const useTransactions = () => {
         },
         body: JSON.stringify(newTransaction)
       });
-      
       if (res.ok) {
-        // Refetch to get updated list
         fetchTransactions();
       }
     } catch (error) {
@@ -38,8 +36,40 @@ export const useTransactions = () => {
     }
   };
 
+  const deleteTransaction = async (id) => {
+    try {
+      const res = await fetch(`/api/transactions/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        fetchTransactions();
+      }
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+    }
+  };
+
+  const updateTransaction = async (id, updatedData) => {
+    try {
+      const res = await fetch(`/api/transactions/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedData)
+      });
+      if (res.ok) {
+        fetchTransactions();
+      }
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+    }
+  };
+
   return {
     transactions,
-    addTransaction
+    addTransaction,
+    deleteTransaction,
+    updateTransaction
   };
 };

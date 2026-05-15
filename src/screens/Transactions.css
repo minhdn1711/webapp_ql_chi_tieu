@@ -1,3 +1,9 @@
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+}
+
 .month-filter {
   padding: 8px 12px;
   border-radius: var(--radius-md);
@@ -104,4 +110,28 @@
 
 .t-amount.income {
   color: var(--primary-green);
+}
+
+.t-actions {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.btn-delete-small {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-delete-small:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
 }

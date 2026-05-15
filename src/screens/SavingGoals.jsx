@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X } from 'lucide-react';
-import { formatCurrency } from '../utils/format';
+import { Plus, X, Trash2 } from 'lucide-react';
+import { formatCurrency, formatInput, getRawAmount } from '../utils/format';
+import { useToast } from '../context/ToastContext';
 import './SavingGoals.css';
 
 const SavingGoals = () => {
@@ -9,6 +10,7 @@ const SavingGoals = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(null);
+  const { addToast } = useToast();
   
   // Form states
   const [newGoal, setNewGoal] = useState({ title: '', target: '', icon: '💰', color: '#10B981' });
@@ -35,11 +37,15 @@ const SavingGoals = () => {
       const res = await fetch('/api/goals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newGoal)
+        body: JSON.stringify({
+          ...newGoal,
+          target: getRawAmount(newGoal.target)
+        })
       });
       if (res.ok) {
         setShowAddModal(false);
         setNewGoal({ title: '', target: '', icon: '💰', color: '#10B981' });
+        addToast('Đã tạo quỹ tiết kiệm mới!', 'success');
         fetchGoals();
       }
     } catch (err) {
@@ -53,15 +59,31 @@ const SavingGoals = () => {
       const res = await fetch(`/api/goals/${selectedGoal.id}/add-money`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: parseInt(topUpAmount) })
+        body: JSON.stringify({ amount: getRawAmount(topUpAmount) })
       });
       if (res.ok) {
         setShowTopUpModal(false);
         setTopUpAmount('');
+        addToast('Nạp tiền vào quỹ thành công!', 'success');
         fetchGoals();
       }
     } catch (err) {
       console.error('Lỗi nạp tiền:', err);
+    }
+  };
+
+  const handleDeleteGoal = async (id) => {
+    if (!window.confirm('Bạn có chắc muốn xóa quỹ này?')) return;
+    try {
+      const res = await fetch(`/api/goals/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        addToast('Đã xóa quỹ tiết kiệm', 'info');
+        fetchGoals();
+      }
+    } catch (err) {
+      console.error('Lỗi xóa quỹ:', err);
     }
   };
 
@@ -79,7 +101,7 @@ const SavingGoals = () => {
 
       <div className="goals-list">
         {goals.map(goal => {
-          const percent = Math.min(Math.round((goal.current / goal.target) * 100), 100);
+          const percent = goal.target ? Math.min(Math.round(((goal.current || 0) / goal.target) * 100), 100) : 0;
           
           return (
             <div key={goal.id} className="card goal-card">
@@ -89,6 +111,13 @@ const SavingGoals = () => {
                   <h3 className="goal-title">{goal.title}</h3>
                   <p className="goal-status text-muted">Đạt {percent}%</p>
                 </div>
+                <button 
+                  className="btn-delete-goal" 
+                  onClick={() => handleDeleteGoal(goal.id)}
+                  title="Xóa quỹ"
+                >
+                  <Trash2 size={18} />
+                </button>
               </div>
               
               <div className="goal-progress-container">
@@ -141,12 +170,12 @@ const SavingGoals = () => {
                   required
                 />
               </div>
-              <div className="form-group">
+               <div className="form-group">
                 <label>Số tiền mục tiêu</label>
                 <input 
-                  type="number" 
+                  type="text" 
                   value={newGoal.target} 
-                  onChange={e => setNewGoal({...newGoal, target: e.target.value})}
+                  onChange={e => setNewGoal({...newGoal, target: formatInput(e.target.value)})}
                   placeholder="Nhập số tiền..."
                   required
                 />
@@ -185,12 +214,12 @@ const SavingGoals = () => {
               <X onClick={() => setShowTopUpModal(false)} cursor="pointer" />
             </div>
             <form onSubmit={handleTopUp}>
-              <div className="form-group">
+               <div className="form-group">
                 <label>Số tiền nạp vào</label>
                 <input 
-                  type="number" 
+                  type="text" 
                   value={topUpAmount} 
-                  onChange={e => setTopUpAmount(e.target.value)}
+                  onChange={e => setTopUpAmount(formatInput(e.target.value))}
                   placeholder="Nhập số tiền..."
                   required
                 />

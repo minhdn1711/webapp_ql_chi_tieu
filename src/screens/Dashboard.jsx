@@ -60,9 +60,11 @@ const Dashboard = () => {
 
   // Top Saving Goal
   const topGoal = goals[0] || { title: 'Chưa có quỹ', current: 0, target: 1, icon: '💰' };
-  const goalPercent = Math.round((topGoal.current / topGoal.target) * 100);
+  const goalPercent = topGoal.target ? Math.round(((topGoal.current || 0) / topGoal.target) * 100) : 0;
 
-  const totalDebt = (debts || []).reduce((acc, curr) => acc + (curr?.amount || 0), 0);
+  const totalDebt = (debts || [])
+    .filter(d => d && d.is_paid === 0)
+    .reduce((acc, curr) => acc + ((curr?.amount || 0) - (curr?.paid_amount || 0)), 0);
 
   return (
     <div className="screen-container">

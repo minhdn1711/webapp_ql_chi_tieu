@@ -118,3 +118,21 @@
 .btn-add-money:active {
   background: var(--bg-off-white);
 }
+
+.btn-delete-goal {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-delete-goal:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
+}

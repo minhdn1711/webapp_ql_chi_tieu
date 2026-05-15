@@ -57,8 +57,21 @@ const db = new sqlite3.Database(dbPath, (err) => {
           is_paid INTEGER DEFAULT 0,
           FOREIGN KEY(transaction_id) REFERENCES transactions(id)
         )
-      `);
+      `, () => {
+        // Migration: Thêm cột nếu database cũ chưa có
+        db.run("ALTER TABLE splits ADD COLUMN paid_amount INTEGER DEFAULT 0", (err) => {
+          if (err && !err.message.includes("duplicate column name")) {
+            // ignore if column exists
+          }
+        });
+        db.run("ALTER TABLE splits ADD COLUMN is_paid INTEGER DEFAULT 0", (err) => {
+          if (err && !err.message.includes("duplicate column name")) {
+             // ignore if column exists
+          }
+        });
+      });
 
+      /*
       // Kiểm tra xem database có trống không, nếu trống thì insert dữ liệu mẫu
       db.get("SELECT COUNT(*) AS count FROM transactions", (err, row) => {
         if (row && row.count === 0) {
@@ -87,6 +100,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
           gStmt.finalize();
         }
       });
+      */
     });
   }
 });

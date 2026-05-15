@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Filter, ShoppingBag, Utensils, Zap, Coffee, PiggyBank, Home as HomeIcon, CreditCard, Banknote } from 'lucide-react';
+import { Filter, ShoppingBag, Utensils, Zap, Coffee, PiggyBank, Home as HomeIcon, CreditCard, Banknote, Trash2 } from 'lucide-react';
 import { CATEGORIES } from '../data/mockData';
 import { formatCurrency } from '../utils/format';
 import { useTransactions } from '../hooks/useTransactions';
@@ -15,7 +15,7 @@ const getIconForCategory = (categoryId) => {
     case 'shopping': return <ShoppingBag size={20} />;
     case 'appliances': return <Coffee size={20} />; // Close enough for now
     case 'savings': return <PiggyBank size={20} />;
-    case 'salary': 
+    case 'salary':
     case 'bonus': return <Banknote size={20} />;
     default: return <Coffee size={20} />;
   }
@@ -34,17 +34,19 @@ const formatDate = (dateStr) => {
 };
 
 const Transactions = () => {
-  const { transactions } = useTransactions();
+  const { transactions, deleteTransaction } = useTransactions();
   const [selectedMonth, setSelectedMonth] = useState('2026-05');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedType, setSelectedType] = useState('all');
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
-      const matchMonth = t.date.startsWith(selectedMonth);
-      const matchCategory = selectedCategory === 'all' || t.categoryId === selectedCategory;
-      return matchMonth && matchCategory;
+      if (selectedMonth !== 'all' && !t.date.startsWith(selectedMonth)) return false;
+      if (selectedCategory !== 'all' && t.categoryId !== selectedCategory) return false;
+      if (selectedType !== 'all' && t.type !== selectedType) return false;
+      return true;
     }).sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [selectedMonth, selectedCategory, transactions]);
+  }, [selectedMonth, selectedCategory, selectedType, transactions]);
 
   const totalIncome = useMemo(() => {
     return filteredTransactions
@@ -61,23 +63,33 @@ const Transactions = () => {
   return (
     <div className="screen-container">
       {/* Filters */}
-      <div className="flex-between mb-4">
-        <select 
+      <div className="filters-grid mb-6">
+        <select
           className="month-filter"
           value={selectedMonth}
           onChange={(e) => setSelectedMonth(e.target.value)}
         >
+          <option value="all">Tất cả thời gian</option>
           <option value="2026-05">Tháng 5, 2026</option>
           <option value="2026-04">Tháng 4, 2026</option>
         </select>
-        
-        <select 
+
+        <select
           className="month-filter"
-          style={{marginLeft: '8px', flex: 1}}
+          value={selectedType}
+          onChange={(e) => setSelectedType(e.target.value)}
+        >
+          <option value="all">Tất cả loại</option>
+          <option value="expense">Khoản chi (-)</option>
+          <option value="income">Khoản thu (+)</option>
+        </select>
+
+        <select
+          className="month-filter"
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
         >
-          <option value="all">Tất cả danh mục</option>
+          <option value="all">Tất cả</option>
           {Object.values(CATEGORIES).map(cat => (
             <option key={cat.id} value={cat.id}>{cat.label}</option>
           ))}
@@ -100,22 +112,22 @@ const Transactions = () => {
       {/* Timeline List */}
       <div className="timeline">
         {filteredTransactions.length === 0 && (
-          <div className="text-center text-muted" style={{padding: '40px 0', textAlign: 'center'}}>
+          <div className="text-center text-muted" style={{ padding: '40px 0', textAlign: 'center' }}>
             Không có giao dịch nào
           </div>
         )}
-        
+
         {filteredTransactions.map((t, index) => {
           const showDate = index === 0 || filteredTransactions[index - 1].date !== t.date;
           const category = CATEGORIES[t.categoryId] || CATEGORIES['other'];
-          
+
           return (
             <React.Fragment key={t.id}>
               {showDate && (
                 <div className="timeline-date">{formatDate(t.date)}</div>
               )}
               <div className="transaction-item card">
-                <div className="t-icon-wrapper" style={{color: category.color}}>
+                <div className="t-icon-wrapper" style={{ color: category.color }}>
                   {getIconForCategory(t.categoryId)}
                 </div>
                 <div className="t-details">
@@ -128,6 +140,15 @@ const Transactions = () => {
                 </div>
                 <div className={`t-amount ${t.type}`}>
                   {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)} đ
+                </div>
+                <div className="t-actions">
+                  <button
+                    className="btn-delete-small"
+                    onClick={() => window.confirm('Bạn có chắc muốn xóa giao dịch này?') && deleteTransaction(t.id)}
+                    title="Xóa"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
               </div>
             </React.Fragment>

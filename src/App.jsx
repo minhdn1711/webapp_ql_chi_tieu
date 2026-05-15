@@ -75,19 +75,23 @@ const Header = () => {
   );
 };
 
+import { ToastProvider } from './context/ToastContext';
+
 function App() {
   return (
-    <Router>
-      <Header />
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/add" element={<AddTransaction />} />
-        <Route path="/transactions" element={<Transactions />} />
-        <Route path="/goals" element={<SavingGoals />} />
-        <Route path="/debts" element={<Debts />} />
-      </Routes>
-      <BottomNavClean />
-    </Router>
+    <ToastProvider>
+      <Router>
+        <Header />
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/add" element={<AddTransaction />} />
+          <Route path="/transactions" element={<Transactions />} />
+          <Route path="/goals" element={<SavingGoals />} />
+          <Route path="/debts" element={<Debts />} />
+        </Routes>
+        <BottomNavClean />
+      </Router>
+    </ToastProvider>
   );
 }
 
