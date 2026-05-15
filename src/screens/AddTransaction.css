@@ -89,3 +89,111 @@
   font-weight: 500;
   animation: fadeIn 0.3s ease-out;
 }
+
+/* Split Bill Styles */
+.toggle-switch {
+  width: 50px;
+  height: 26px;
+  background: var(--border-color);
+  border-radius: 13px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.toggle-switch.active {
+  background: var(--primary-green);
+}
+
+.switch-handle {
+  width: 22px;
+  height: 22px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.3s;
+}
+
+.toggle-switch.active .switch-handle {
+  transform: translateX(24px);
+}
+
+.add-person-row {
+  display: flex;
+  gap: 10px;
+}
+
+.add-person-row input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  font-family: inherit;
+}
+
+.btn-add-person {
+  background: var(--primary-green);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 0 16px;
+  font-weight: 600;
+}
+
+.split-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-off-white);
+  padding: 10px 14px;
+  border-radius: 12px;
+}
+
+.split-item span {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.split-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.split-input-wrapper input {
+  width: 100px;
+  border: none;
+  background: transparent;
+  text-align: right;
+  font-weight: 700;
+  color: var(--primary-green);
+  font-size: 14px;
+}
+
+.split-input-wrapper input:focus {
+  outline: none;
+}
+
+.remove-icon {
+  color: var(--accent-pink);
+  cursor: pointer;
+}
+
+.btn-secondary {
+  background: var(--bg-off-white);
+  color: var(--text-dark);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.w-full { width: 100%; }
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}

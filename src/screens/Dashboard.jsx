@@ -1,12 +1,19 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Plus, ArrowDownCircle, ArrowUpCircle, TrendingUp, ChevronRight } from 'lucide-react';
-import { MOCK_GOALS, CATEGORIES } from '../data/mockData';
+import { CATEGORIES } from '../data/mockData';
 import { useTransactions } from '../hooks/useTransactions';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const { transactions } = useTransactions();
+  const [goals, setGoals] = useState([]);
+  const [debts, setDebts] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/goals').then(res => res.json()).then(setGoals);
+    fetch('/api/debts').then(res => res.json()).then(setDebts);
+  }, []);
 
   // Calculate for current month (May 2026 as per mock)
   const currentMonthTransactions = useMemo(() => {
@@ -51,8 +58,10 @@ const Dashboard = () => {
   const maxSpending = Math.max(...categorySpending.map(c => c.amount), 1);
 
   // Top Saving Goal
-  const topGoal = MOCK_GOALS[0];
+  const topGoal = goals[0] || { title: 'Chưa có quỹ', current: 0, target: 1, icon: '💰' };
   const goalPercent = Math.round((topGoal.current / topGoal.target) * 100);
+
+  const totalDebt = debts.reduce((acc, curr) => acc + curr.amount, 0);
 
   return (
     <div className="screen-container">
@@ -72,6 +81,16 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+        
+        {totalDebt > 0 && (
+          <NavLink to="/debts" className="card debt-summary-card flex-between" style={{textDecoration: 'none', color: 'inherit', marginTop: '-8px'}}>
+            <div>
+              <p className="form-label text-muted" style={{marginBottom: '4px'}}>Bạn bè đang nợ</p>
+              <h3 className="debt-amount-text" style={{color: 'var(--primary-green)', fontWeight: '800', margin: 0}}>+{totalDebt.toLocaleString()} đ</h3>
+            </div>
+            <ChevronRight size={20} color="var(--primary-green)" />
+          </NavLink>
+        )}
       </div>
 
       {/* Spending Chart */}

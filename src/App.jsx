@@ -1,10 +1,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, useLocation } from 'react-router-dom';
-import { Home, PlusCircle, List, PiggyBank } from 'lucide-react';
+import { Home, PlusCircle, List, PiggyBank, Wallet } from 'lucide-react';
 import Dashboard from './screens/Dashboard';
 import AddTransaction from './screens/AddTransaction';
 import Transactions from './screens/Transactions';
 import SavingGoals from './screens/SavingGoals';
+import Debts from './screens/Debts';
 import './App.css';
 
 const BottomNav = () => {
@@ -39,16 +40,20 @@ const BottomNavClean = () => {
   return (
     <nav className="bottom-nav">
       <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} end>
-        <Home size={24} />
+        <Home size={22} />
         <span>Tổng quan</span>
       </NavLink>
       <NavLink to="/transactions" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-        <List size={24} />
+        <List size={22} />
         <span>Giao dịch</span>
       </NavLink>
       <NavLink to="/goals" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-        <PiggyBank size={24} />
+        <PiggyBank size={22} />
         <span>Tiết kiệm</span>
+      </NavLink>
+      <NavLink to="/debts" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+        <Wallet size={22} />
+        <span>Nợ cần thu</span>
       </NavLink>
     </nav>
   );
@@ -61,6 +66,7 @@ const Header = () => {
   if (location.pathname === '/add') title = "Thêm giao dịch";
   if (location.pathname === '/transactions') title = "Lịch sử chi tiêu";
   if (location.pathname === '/goals') title = "Mục tiêu tiết kiệm";
+  if (location.pathname === '/debts') title = "Nợ cần thu";
 
   return (
     <header className="app-header">
@@ -78,6 +84,7 @@ function App() {
         <Route path="/add" element={<AddTransaction />} />
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/goals" element={<SavingGoals />} />
+        <Route path="/debts" element={<Debts />} />
       </Routes>
       <BottomNavClean />
     </Router>

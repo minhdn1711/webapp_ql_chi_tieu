@@ -1,0 +1,99 @@
+.debt-summary {
+  background: linear-gradient(135deg, var(--primary-green), #4a8a75);
+  color: white;
+  text-align: center;
+  padding: 30px 20px;
+  border: none;
+}
+
+.debt-label {
+  font-size: 13px;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.debt-total {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.debt-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.debt-info {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.debt-user-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--bg-off-white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-green);
+}
+
+.debt-person {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.debt-transaction {
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.debt-date {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.debt-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.debt-amount {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary-green);
+}
+
+.btn-pay {
+  background: transparent;
+  border: none;
+  color: var(--primary-green);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.btn-pay:active {
+  transform: scale(0.9);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+}

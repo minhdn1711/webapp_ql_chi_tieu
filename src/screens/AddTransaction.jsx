@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTransactions } from '../hooks/useTransactions';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, X } from 'lucide-react';
 import './AddTransaction.css';
 
 const AddTransaction = () => {
@@ -15,7 +15,36 @@ const AddTransaction = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [title, setTitle] = useState('');
   
+  // Split bill states
+  const [isSplit, setIsSplit] = useState(false);
+  const [splitPeople, setSplitPeople] = useState([]);
+  const [newPersonName, setNewPersonName] = useState('');
+  
   const [error, setError] = useState('');
+
+  const addPerson = () => {
+    if (newPersonName.trim()) {
+      setSplitPeople([...splitPeople, { name: newPersonName.trim(), amount: '' }]);
+      setNewPersonName('');
+    }
+  };
+
+  const removePerson = (index) => {
+    setSplitPeople(splitPeople.filter((_, i) => i !== index));
+  };
+
+  const updateSplitAmount = (index, val) => {
+    const newPeople = [...splitPeople];
+    newPeople[index].amount = val;
+    setSplitPeople(newPeople);
+  };
+
+  const autoSplit = () => {
+    if (!amount || splitPeople.length === 0) return;
+    const splitAmount = Math.floor(Number(amount) / (splitPeople.length + 1));
+    const newPeople = splitPeople.map(p => ({ ...p, amount: splitAmount }));
+    setSplitPeople(newPeople);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -44,7 +73,11 @@ const AddTransaction = () => {
       amount: Number(amount),
       type,
       categoryId,
-      by: paidBy
+      by: paidBy,
+      splits: isSplit ? splitPeople.map(p => ({ 
+        name: p.name, 
+        amount: Number(p.amount) 
+      })) : null
     };
 
     addTransaction(newTransaction);
@@ -164,6 +197,57 @@ const AddTransaction = () => {
             onChange={(e) => setTitle(e.target.value)}
           ></textarea>
         </div>
+
+        {type === 'expense' && (
+          <div className="split-bill-section mb-6">
+            <div className="flex-between mb-4">
+              <label className="form-label" style={{marginBottom: 0}}>Chia tiền cho bạn bè</label>
+              <div 
+                className={`toggle-switch ${isSplit ? 'active' : ''}`}
+                onClick={() => setIsSplit(!isSplit)}
+              >
+                <div className="switch-handle"></div>
+              </div>
+            </div>
+
+            {isSplit && (
+              <div className="split-details animate-fadeIn">
+                <div className="add-person-row mb-4">
+                  <input 
+                    type="text" 
+                    placeholder="Tên người nợ..." 
+                    value={newPersonName}
+                    onChange={(e) => setNewPersonName(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addPerson())}
+                  />
+                  <button type="button" onClick={addPerson} className="btn-add-person">Thêm</button>
+                </div>
+
+                {splitPeople.length > 0 && (
+                  <>
+                    <div className="split-list mb-4">
+                      {splitPeople.map((person, index) => (
+                        <div key={index} className="split-item mb-2">
+                          <span>{person.name}</span>
+                          <div className="split-input-wrapper">
+                            <input 
+                              type="number" 
+                              placeholder="Số tiền..." 
+                              value={person.amount}
+                              onChange={(e) => updateSplitAmount(index, e.target.value)}
+                            />
+                            <X size={16} onClick={() => removePerson(index)} className="remove-icon" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" onClick={autoSplit} className="btn-secondary w-full mb-4">Chia đều tất cả</button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <button type="submit" className="btn-primary">Lưu giao dịch</button>
       </form>

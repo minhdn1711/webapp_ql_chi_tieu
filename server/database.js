@@ -39,10 +39,22 @@ const db = new sqlite3.Database(dbPath, (err) => {
         CREATE TABLE IF NOT EXISTS goals (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           title TEXT NOT NULL,
-          current INTEGER NOT NULL,
+          current INTEGER NOT NULL DEFAULT 0,
           target INTEGER NOT NULL,
           icon TEXT,
           color TEXT
+        )
+      `);
+
+      // Bảng chia tiền (Split bill)
+      db.run(`
+        CREATE TABLE IF NOT EXISTS splits (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          transaction_id INTEGER,
+          person_name TEXT NOT NULL,
+          amount INTEGER NOT NULL,
+          is_paid INTEGER DEFAULT 0,
+          FOREIGN KEY(transaction_id) REFERENCES transactions(id)
         )
       `);
 
@@ -50,8 +62,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
       db.get("SELECT COUNT(*) AS count FROM transactions", (err, row) => {
         if (row && row.count === 0) {
           console.log("Database trống. Đang thêm dữ liệu mẫu...");
-          const stmt = db.prepare("INSERT INTO transactions (date, title, amount, type, categoryId, \"by\") VALUES (?, ?, ?, ?, ?, ?)");
           
+          // Seed Transactions
+          const tStmt = db.prepare("INSERT INTO transactions (date, title, amount, type, categoryId, \"by\") VALUES (?, ?, ?, ?, ?, ?)");
           const mockTransactions = [
             ['2026-05-14', 'Đi siêu thị Lotte', 1250000, 'expense', 'food', 'shared'],
             ['2026-05-14', 'Ăn trưa công ty', 55000, 'expense', 'food', 'me'],
@@ -59,9 +72,18 @@ const db = new sqlite3.Database(dbPath, (err) => {
             ['2026-05-10', 'Lương vợ', 22000000, 'income', 'salary', 'partner'],
             ['2026-05-05', 'Lương chồng', 25000000, 'income', 'salary', 'me'],
           ];
+          mockTransactions.forEach(t => tStmt.run(t));
+          tStmt.finalize();
 
-          mockTransactions.forEach(t => stmt.run(t));
-          stmt.finalize();
+          // Seed Goals
+          const gStmt = db.prepare("INSERT INTO goals (title, current, target, icon, color) VALUES (?, ?, ?, ?, ?)");
+          const mockGoals = [
+            ['Quỹ du lịch Phú Quốc', 12000000, 20000000, '✈️', 'var(--primary-green)'],
+            ['Quỹ dự phòng (6 tháng)', 45000000, 120000000, '🛡️', 'var(--accent-pink)'],
+            ['Mua máy sấy quần áo', 5000000, 8000000, '🧺', '#E0A96D']
+          ];
+          mockGoals.forEach(g => gStmt.run(g));
+          gStmt.finalize();
         }
       });
     });
