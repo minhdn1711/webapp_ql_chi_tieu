@@ -53,6 +53,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
           transaction_id INTEGER,
           person_name TEXT NOT NULL,
           amount INTEGER NOT NULL,
+          paid_amount INTEGER DEFAULT 0,
           is_paid INTEGER DEFAULT 0,
           FOREIGN KEY(transaction_id) REFERENCES transactions(id)
         )
