@@ -2,6 +2,9 @@ version: '3.8'
 
 services:
   backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
     image: ghcr.io/minhdn1711/webapp_ql_chi_tieu-backend:main
     container_name: couple-expense-backend
     # ports:
@@ -15,6 +18,9 @@ services:
     restart: always
 
   frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: ghcr.io/minhdn1711/webapp_ql_chi_tieu-frontend:main
     container_name: couple-expense-frontend
     # ports:
