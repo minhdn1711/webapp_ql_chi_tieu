@@ -31,8 +31,10 @@ export const useTransactions = () => {
       if (res.ok) {
         fetchTransactions();
       }
+      return res;
     } catch (error) {
       console.error('Error saving transaction:', error);
+      throw error;
     }
   };
 
@@ -44,8 +46,10 @@ export const useTransactions = () => {
       if (res.ok) {
         fetchTransactions();
       }
+      return res;
     } catch (error) {
       console.error('Error deleting transaction:', error);
+      throw error;
     }
   };
 
@@ -61,8 +65,10 @@ export const useTransactions = () => {
       if (res.ok) {
         fetchTransactions();
       }
+      return res;
     } catch (error) {
       console.error('Error updating transaction:', error);
+      throw error;
     }
   };
 

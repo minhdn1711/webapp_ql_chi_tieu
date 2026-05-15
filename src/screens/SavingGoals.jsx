@@ -13,6 +13,15 @@ const SavingGoals = () => {
   const [selectedGoal, setSelectedGoal] = useState(null);
   const { addToast } = useToast();
   const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, id: null });
+  const [showIconPicker, setShowIconPicker] = useState(false);
+
+  const iconPresets = [
+    '💰', '💵', '🧧', '🎁', '📈', '🐖', // Tiền bạc
+    '🏠', '🚗', '🛵', '✈️', '💍', '🎓', // Mục tiêu lớn
+    '🍔', '☕', '🎮', '🎬', '🎧', '🎸', // Giải trí/Ăn uống
+    '🏥', '💊', '🏋️', '🧘', '🚲', '👟', // Sức khỏe
+    '🐶', '🐱', '🌵', '🛠️', '📦', '📱'  // Khác
+  ];
   
   // Form states
   const [newGoal, setNewGoal] = useState({ title: '', target: '', icon: '💰', color: '#10B981' });
@@ -47,6 +56,7 @@ const SavingGoals = () => {
       if (res.ok) {
         setShowAddModal(false);
         setNewGoal({ title: '', target: '', icon: '💰', color: '#10B981' });
+        setShowIconPicker(false);
         addToast('Đã tạo quỹ tiết kiệm mới!', 'success');
         fetchGoals();
       }
@@ -188,22 +198,47 @@ const SavingGoals = () => {
                 />
               </div>
               <div className="form-row">
-                <div className="form-group">
+                <div className="form-group" style={{position: 'relative'}}>
                   <label>Biểu tượng (Icon)</label>
-                  <input 
-                    type="text" 
-                    value={newGoal.icon} 
-                    onChange={e => setNewGoal({...newGoal, icon: e.target.value})}
-                    placeholder="Emoji..."
-                  />
+                  <div className={`icon-selector-trigger ${showIconPicker ? 'active' : ''}`} onClick={() => setShowIconPicker(!showIconPicker)}>
+                    {newGoal.icon}
+                  </div>
+                  {showIconPicker && (
+                    <div className="icon-presets-dropdown card animate-fadeIn" style={{right: 'auto', left: 0}}>
+                      {iconPresets.map(icon => (
+                        <div 
+                          key={icon} 
+                          className={`icon-option ${newGoal.icon === icon ? 'active' : ''}`}
+                          onClick={() => {
+                            setNewGoal({...newGoal, icon});
+                            setShowIconPicker(false);
+                          }}
+                        >
+                          {icon}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="form-group">
+                <div className="form-group flex-1">
                   <label>Màu sắc</label>
-                  <input 
-                    type="color" 
-                    value={newGoal.color} 
-                    onChange={e => setNewGoal({...newGoal, color: e.target.value})}
-                  />
+                  <div className="color-presets" style={{marginTop: 0}}>
+                    {['#10B981', '#EF4444', '#3B82F6', '#F59E0B', '#8B5CF6', '#EC4899'].map(color => (
+                      <div 
+                        key={color} 
+                        className={`color-preset ${newGoal.color === color ? 'active' : ''}`}
+                        style={{backgroundColor: color, width: '24px', height: '24px'}}
+                        onClick={() => setNewGoal({...newGoal, color})}
+                      ></div>
+                    ))}
+                    <input 
+                      type="color" 
+                      value={newGoal.color} 
+                      onChange={e => setNewGoal({...newGoal, color: e.target.value})}
+                      className="custom-color-picker"
+                      style={{width: '24px', height: '24px'}}
+                    />
+                  </div>
                 </div>
               </div>
               <button type="submit" className="primary-btn mt-4">Tạo quỹ</button>

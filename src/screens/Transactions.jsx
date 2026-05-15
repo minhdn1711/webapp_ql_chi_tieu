@@ -3,6 +3,7 @@ import { Filter, ShoppingBag, Utensils, Zap, Coffee, PiggyBank, Home as HomeIcon
 import { formatCurrency } from '../utils/format';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../context/CategoryContext';
+import { useToast } from '../context/ToastContext';
 import ConfirmModal from '../components/ConfirmModal';
 import './Transactions.css';
 
@@ -37,6 +38,7 @@ const formatDate = (dateStr) => {
 const Transactions = () => {
   const { transactions, deleteTransaction } = useTransactions();
   const { categories } = useCategories();
+  const { addToast } = useToast();
   
   // Create a lookup map for categories
   const categoriesMap = useMemo(() => {
@@ -174,8 +176,13 @@ const Transactions = () => {
         isOpen={confirmDelete.isOpen}
         title="Xóa giao dịch"
         message="Bạn có chắc chắn muốn xóa giao dịch này? Hành động này không thể hoàn tác."
-        onConfirm={() => {
-          deleteTransaction(confirmDelete.id);
+        onConfirm={async () => {
+          const res = await deleteTransaction(confirmDelete.id);
+          if (res.ok) {
+            addToast('Đã xóa giao dịch thành công!', 'info');
+          } else {
+            addToast('Lỗi khi xóa giao dịch', 'error');
+          }
           setConfirmDelete({ isOpen: false, id: null });
         }}
         onCancel={() => setConfirmDelete({ isOpen: false, id: null })}
