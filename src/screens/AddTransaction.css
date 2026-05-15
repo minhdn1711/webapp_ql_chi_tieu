@@ -1,0 +1,91 @@
+.type-toggle {
+  display: flex;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-muted);
+  transition: all 0.2s;
+  border: none;
+  background: transparent;
+}
+
+.toggle-btn.active {
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.toggle-btn.active.expense {
+  background-color: var(--accent-pink);
+}
+
+.toggle-btn.active.income {
+  background-color: var(--primary-green);
+}
+
+.form-card {
+  padding: 24px;
+}
+
+.amount-input {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--primary-green);
+  padding: 16px;
+  text-align: right;
+}
+
+.amount-input::placeholder {
+  color: var(--border-color);
+}
+
+.radio-group {
+  display: flex;
+  gap: 8px;
+}
+
+.radio-pill {
+  flex: 1;
+  text-align: center;
+  padding: 12px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.radio-pill input[type="radio"] {
+  display: none;
+}
+
+.radio-pill.active {
+  background-color: var(--light-pink);
+  color: var(--primary-green);
+  border-color: var(--accent-pink);
+  font-weight: 600;
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease-out;
+}
