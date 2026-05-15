@@ -22,7 +22,7 @@ const SavingGoals = () => {
     '🏥', '💊', '🏋️', '🧘', '🚲', '👟', // Sức khỏe
     '🐶', '🐱', '🌵', '🛠️', '📦', '📱'  // Khác
   ];
-  
+
   // Form states
   const [newGoal, setNewGoal] = useState({ title: '', target: '', icon: '💰', color: '#10B981' });
   const [topUpAmount, setTopUpAmount] = useState('');
@@ -119,7 +119,7 @@ const SavingGoals = () => {
       <div className="goals-list">
         {goals.map(goal => {
           const percent = goal.target ? Math.min(Math.round(((goal.current || 0) / goal.target) * 100), 100) : 0;
-          
+
           return (
             <div key={goal.id} className="card goal-card">
               <div className="goal-header">
@@ -128,24 +128,24 @@ const SavingGoals = () => {
                   <h3 className="goal-title">{goal.title}</h3>
                   <p className="goal-status text-muted">Đạt {percent}%</p>
                 </div>
-                <button 
-                  className="btn-delete-goal" 
+                <button
+                  className="btn-delete-goal"
                   onClick={() => handleDeleteGoal(goal.id)}
                   title="Xóa quỹ"
                 >
                   <Trash2 size={18} />
                 </button>
               </div>
-              
+
               <div className="goal-progress-container">
                 <div className="progress-bg">
-                  <div 
-                    className="progress-fill" 
+                  <div
+                    className="progress-fill"
                     style={{ width: `${percent}%`, backgroundColor: goal.color || '#10B981' }}
                   ></div>
                 </div>
               </div>
-              
+
               <div className="goal-footer">
                 <div className="g-col">
                   <span className="g-label">Hiện có</span>
@@ -153,10 +153,10 @@ const SavingGoals = () => {
                 </div>
                 <div className="g-col text-right">
                   <span className="g-label">Mục tiêu</span>
-                   <span className="g-amount text-muted">{formatCurrency(goal.target)} đ</span>
+                  <span className="g-amount text-muted">{formatCurrency(goal.target)} đ</span>
                 </div>
               </div>
-              
+
               <button className="btn-add-money" onClick={() => {
                 setSelectedGoal(goal);
                 setShowTopUpModal(true);
@@ -179,38 +179,38 @@ const SavingGoals = () => {
             <form onSubmit={handleAddGoal}>
               <div className="form-group">
                 <label>Tên quỹ</label>
-                <input 
-                  type="text" 
-                  value={newGoal.title} 
-                  onChange={e => setNewGoal({...newGoal, title: e.target.value})}
+                <input
+                  type="text"
+                  value={newGoal.title}
+                  onChange={e => setNewGoal({ ...newGoal, title: e.target.value })}
                   placeholder="Ví dụ: Mua iPhone, Du lịch..."
                   required
                 />
               </div>
-               <div className="form-group">
+              <div className="form-group">
                 <label>Số tiền mục tiêu</label>
-                <input 
-                  type="text" 
-                  value={newGoal.target} 
-                  onChange={e => setNewGoal({...newGoal, target: formatInput(e.target.value)})}
+                <input
+                  type="text"
+                  value={newGoal.target}
+                  onChange={e => setNewGoal({ ...newGoal, target: formatInput(e.target.value) })}
                   placeholder="Nhập số tiền..."
                   required
                 />
               </div>
               <div className="form-row">
-                <div className="form-group" style={{position: 'relative'}}>
+                <div className="form-group" style={{ position: 'relative' }}>
                   <label>Biểu tượng (Icon)</label>
-                  <div className={`icon-selector-trigger ${showIconPicker ? 'active' : ''}`} onClick={() => setShowIconPicker(!showIconPicker)}>
+                  <div style={{ marginTop: '10px' }} className={`icon-selector-trigger ${showIconPicker ? 'active' : ''}`} onClick={() => setShowIconPicker(!showIconPicker)}>
                     {newGoal.icon}
                   </div>
                   {showIconPicker && (
-                    <div className="icon-presets-dropdown card animate-fadeIn" style={{right: 'auto', left: 0}}>
+                    <div className="icon-presets-dropdown card animate-fadeIn" style={{ right: 'auto', left: 0 }}>
                       {iconPresets.map(icon => (
-                        <div 
-                          key={icon} 
+                        <div
+                          key={icon}
                           className={`icon-option ${newGoal.icon === icon ? 'active' : ''}`}
                           onClick={() => {
-                            setNewGoal({...newGoal, icon});
+                            setNewGoal({ ...newGoal, icon });
                             setShowIconPicker(false);
                           }}
                         >
@@ -222,21 +222,21 @@ const SavingGoals = () => {
                 </div>
                 <div className="form-group flex-1">
                   <label>Màu sắc</label>
-                  <div className="color-presets" style={{marginTop: 0}}>
+                  <div className="color-presets" style={{ marginTop: '10px' }}>
                     {['#10B981', '#EF4444', '#3B82F6', '#F59E0B', '#8B5CF6', '#EC4899'].map(color => (
-                      <div 
-                        key={color} 
+                      <div
+                        key={color}
                         className={`color-preset ${newGoal.color === color ? 'active' : ''}`}
-                        style={{backgroundColor: color, width: '24px', height: '24px'}}
-                        onClick={() => setNewGoal({...newGoal, color})}
+                        style={{ backgroundColor: color, width: '24px', height: '24px' }}
+                        onClick={() => setNewGoal({ ...newGoal, color })}
                       ></div>
                     ))}
-                    <input 
-                      type="color" 
-                      value={newGoal.color} 
-                      onChange={e => setNewGoal({...newGoal, color: e.target.value})}
+                    <input
+                      type="color"
+                      value={newGoal.color}
+                      onChange={e => setNewGoal({ ...newGoal, color: e.target.value })}
                       className="custom-color-picker"
-                      style={{width: '24px', height: '24px'}}
+                      style={{ width: '24px', height: '24px' }}
                     />
                   </div>
                 </div>
@@ -256,11 +256,11 @@ const SavingGoals = () => {
               <X onClick={() => setShowTopUpModal(false)} cursor="pointer" />
             </div>
             <form onSubmit={handleTopUp}>
-               <div className="form-group">
+              <div className="form-group">
                 <label>Số tiền nạp vào</label>
-                <input 
-                  type="text" 
-                  value={topUpAmount} 
+                <input
+                  type="text"
+                  value={topUpAmount}
                   onChange={e => setTopUpAmount(formatInput(e.target.value))}
                   placeholder="Nhập số tiền..."
                   required
@@ -272,7 +272,7 @@ const SavingGoals = () => {
         </div>
       )}
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={confirmDelete.isOpen}
         title="Xóa quỹ tiết kiệm"
         message="Bạn có chắc chắn muốn xóa quỹ tiết kiệm này? Dữ liệu sẽ không thể khôi phục."
