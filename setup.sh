@@ -35,7 +35,13 @@ if ! [ -x "$(command -v docker-compose)" ]; then
     echo ">>> Đã cài đặt Docker Compose."
 fi
 
-# 1. Kiểm tra file .env
+# 1. Tự động tạo mạng webdongho-network nếu chưa có
+if ! docker network ls | grep -q "webdongho-network"; then
+    echo ">>> Đang tạo mạng Docker: webdongho-network..."
+    docker network create webdongho-network
+fi
+
+# 2. Kiểm tra và tạo file .env
 if [ ! -f .env ]; then
     echo ">>> Đang tạo file .env từ .env.example..."
     cp .env.example .env
@@ -46,17 +52,14 @@ if [ ! -f .env ]; then
     fi
 fi
 
-# 2. Đảm bảo thư mục dữ liệu tồn tại cho SQLite
-if [ "$IS_PROD" = true ]; then
-    echo ">>> Đang tạo thư mục data cho SQLite..."
-    mkdir -p data
-fi
+# 3. Đảm bảo thư mục dữ liệu tồn tại cho SQLite
+mkdir -p data
 
-# 3. Khởi động Docker
+# 4. Khởi động Docker
 echo ">>> Đang khởi động các container Docker với file $COMPOSE_FILE..."
 docker-compose -f $COMPOSE_FILE up -d --build
 
-# 4. Kiểm tra sức khỏe hệ thống
+# 5. Kiểm tra sức khỏe hệ thống
 echo ">>> Đang đợi các dịch vụ khởi động (5 giây)..."
 sleep 5
 
@@ -64,10 +67,9 @@ echo -e "\n===================================================="
 echo " THIẾT LẬP HOÀN TẤT!"
 if [ "$IS_PROD" = true ]; then
     echo " - Môi trường: Production"
-    echo " - Website: http://(IP_CUA_BAN)"
+    echo " - Website: https://(DOMAIN_CUA_BAN)"
 else
     echo " - Môi trường: Local"
     echo " - Website: http://localhost"
-    echo " - Backend API: http://localhost:3000"
 fi
 echo "===================================================="
