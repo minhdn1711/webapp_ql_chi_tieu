@@ -1,15 +1,24 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Plus, ArrowDownCircle, ArrowUpCircle, TrendingUp, ChevronRight } from 'lucide-react';
-import { CATEGORIES } from '../data/mockData';
 import { formatCurrency } from '../utils/format';
 import { useTransactions } from '../hooks/useTransactions';
+import { useCategories } from '../context/CategoryContext';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const { transactions } = useTransactions();
+  const { categories } = useCategories();
   const [goals, setGoals] = useState([]);
   const [debts, setDebts] = useState([]);
+  
+  // Create a lookup map for categories
+  const categoriesMap = useMemo(() => {
+    return categories.reduce((acc, cat) => {
+      acc[cat.id] = cat;
+      return acc;
+    }, {});
+  }, [categories]);
 
   useEffect(() => {
     fetch('/api/goals').then(res => res.json()).then(setGoals);
@@ -45,7 +54,11 @@ const Dashboard = () => {
     
     // Convert to array and sort by amount descending
     const sorted = Object.entries(grouped)
-      .map(([id, amount]) => ({ id, amount, ...(CATEGORIES[id] || CATEGORIES['other']) }))
+      .map(([id, amount]) => ({ 
+        id, 
+        amount, 
+        ...(categoriesMap[id] || { label: 'Khác', color: 'var(--text-muted)' }) 
+      }))
       .sort((a, b) => b.amount - a.amount);
       
     // Get top 4 or group others
@@ -53,7 +66,7 @@ const Dashboard = () => {
     const top3 = sorted.slice(0, 3);
     const othersAmount = sorted.slice(3).reduce((acc, curr) => acc + curr.amount, 0);
     return [...top3, { id: 'other', label: 'Khác', color: 'var(--text-muted)', amount: othersAmount }];
-  }, [currentMonthTransactions]);
+  }, [currentMonthTransactions, categoriesMap]);
 
   // Find max spending for chart relative heights
   const maxSpending = Math.max(...categorySpending.map(c => c.amount), 1);

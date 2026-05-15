@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { Filter, ShoppingBag, Utensils, Zap, Coffee, PiggyBank, Home as HomeIcon, CreditCard, Banknote, Trash2 } from 'lucide-react';
-import { CATEGORIES } from '../data/mockData';
 import { formatCurrency } from '../utils/format';
 import { useTransactions } from '../hooks/useTransactions';
+import { useCategories } from '../context/CategoryContext';
+import ConfirmModal from '../components/ConfirmModal';
 import './Transactions.css';
 
 // Helper to map category to icon
@@ -35,9 +36,22 @@ const formatDate = (dateStr) => {
 
 const Transactions = () => {
   const { transactions, deleteTransaction } = useTransactions();
+  const { categories } = useCategories();
+  
+  // Create a lookup map for categories
+  const categoriesMap = useMemo(() => {
+    return categories.reduce((acc, cat) => {
+      acc[cat.id] = cat;
+      return acc;
+    }, {});
+  }, [categories]);
+
   const [selectedMonth, setSelectedMonth] = useState('2026-05');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
+  
+  // Confirm delete modal state
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, id: null });
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
@@ -84,13 +98,13 @@ const Transactions = () => {
           <option value="income">Khoản thu (+)</option>
         </select>
 
-        <select
+        <select 
           className="month-filter"
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
         >
           <option value="all">Tất cả</option>
-          {Object.values(CATEGORIES).map(cat => (
+          {categories.map(cat => (
             <option key={cat.id} value={cat.id}>{cat.label}</option>
           ))}
         </select>
@@ -119,16 +133,16 @@ const Transactions = () => {
 
         {filteredTransactions.map((t, index) => {
           const showDate = index === 0 || filteredTransactions[index - 1].date !== t.date;
-          const category = CATEGORIES[t.categoryId] || CATEGORIES['other'];
-
+          const category = categoriesMap[t.categoryId] || { label: 'Khác', color: 'var(--text-muted)' };
+          
           return (
             <React.Fragment key={t.id}>
               {showDate && (
                 <div className="timeline-date">{formatDate(t.date)}</div>
               )}
               <div className="transaction-item card">
-                <div className="t-icon-wrapper" style={{ color: category.color }}>
-                  {getIconForCategory(t.categoryId)}
+                <div className="t-icon-wrapper" style={{ backgroundColor: category.color + '15', color: category.color, fontSize: '20px' }}>
+                  {category.icon || '📦'}
                 </div>
                 <div className="t-details">
                   <h4 className="t-title">{t.title}</h4>
@@ -144,7 +158,7 @@ const Transactions = () => {
                 <div className="t-actions">
                   <button
                     className="btn-delete-small"
-                    onClick={() => window.confirm('Bạn có chắc muốn xóa giao dịch này?') && deleteTransaction(t.id)}
+                    onClick={() => setConfirmDelete({ isOpen: true, id: t.id })}
                     title="Xóa"
                   >
                     <Trash2 size={16} />
@@ -155,6 +169,17 @@ const Transactions = () => {
           );
         })}
       </div>
+
+      <ConfirmModal 
+        isOpen={confirmDelete.isOpen}
+        title="Xóa giao dịch"
+        message="Bạn có chắc chắn muốn xóa giao dịch này? Hành động này không thể hoàn tác."
+        onConfirm={() => {
+          deleteTransaction(confirmDelete.id);
+          setConfirmDelete({ isOpen: false, id: null });
+        }}
+        onCancel={() => setConfirmDelete({ isOpen: false, id: null })}
+      />
     </div>
   );
 };

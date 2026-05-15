@@ -4,12 +4,15 @@ import { useTransactions } from '../hooks/useTransactions';
 import { AlertCircle, X } from 'lucide-react';
 import { formatInput, getRawAmount } from '../utils/format';
 import { useToast } from '../context/ToastContext';
+import { useCategories } from '../context/CategoryContext';
+import { Link } from 'react-router-dom';
 import './AddTransaction.css';
 
 const AddTransaction = () => {
   const navigate = useNavigate();
   const { addTransaction } = useTransactions();
   const { addToast } = useToast();
+  const { categories } = useCategories();
   
   const [type, setType] = useState('expense');
   const [amount, setAmount] = useState('');
@@ -144,32 +147,19 @@ const AddTransaction = () => {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Danh mục *</label>
+          <div className="flex-between mb-2">
+            <label className="form-label" style={{marginBottom: 0}}>Danh mục *</label>
+            <Link to="/categories" className="text-link" style={{fontSize: '12px'}}>Quản lý</Link>
+          </div>
           <select 
             className="form-select" 
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
           >
             <option value="" disabled>Chọn danh mục...</option>
-            {type === 'expense' ? (
-              <>
-                <option value="food">Ăn uống / Đi chợ</option>
-                <option value="rent">Tiền nhà</option>
-                <option value="utilities">Điện nước</option>
-                <option value="transport">Di chuyển</option>
-                <option value="shopping">Mua sắm</option>
-                <option value="appliances">Gia dụng</option>
-                <option value="savings">Tiết kiệm</option>
-                <option value="other">Khác</option>
-              </>
-            ) : (
-              <>
-                <option value="salary">Lương</option>
-                <option value="bonus">Thưởng</option>
-                <option value="gift">Được tặng</option>
-                <option value="other">Khác</option>
-              </>
-            )}
+            {categories.filter(c => c.type === type).map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.label}</option>
+            ))}
           </select>
         </div>
 

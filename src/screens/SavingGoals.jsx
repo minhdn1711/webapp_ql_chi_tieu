@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, X, Trash2 } from 'lucide-react';
 import { formatCurrency, formatInput, getRawAmount } from '../utils/format';
 import { useToast } from '../context/ToastContext';
+import ConfirmModal from '../components/ConfirmModal';
 import './SavingGoals.css';
 
 const SavingGoals = () => {
@@ -11,6 +12,7 @@ const SavingGoals = () => {
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(null);
   const { addToast } = useToast();
+  const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, id: null });
   
   // Form states
   const [newGoal, setNewGoal] = useState({ title: '', target: '', icon: '💰', color: '#10B981' });
@@ -72,8 +74,12 @@ const SavingGoals = () => {
     }
   };
 
-  const handleDeleteGoal = async (id) => {
-    if (!window.confirm('Bạn có chắc muốn xóa quỹ này?')) return;
+  const handleDeleteGoal = (id) => {
+    setConfirmDelete({ isOpen: true, id });
+  };
+
+  const confirmDeleteAction = async () => {
+    const id = confirmDelete.id;
     try {
       const res = await fetch(`/api/goals/${id}`, {
         method: 'DELETE'
@@ -85,6 +91,7 @@ const SavingGoals = () => {
     } catch (err) {
       console.error('Lỗi xóa quỹ:', err);
     }
+    setConfirmDelete({ isOpen: false, id: null });
   };
 
   if (loading) return <div className="screen-container">Đang tải...</div>;
@@ -229,6 +236,14 @@ const SavingGoals = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={confirmDelete.isOpen}
+        title="Xóa quỹ tiết kiệm"
+        message="Bạn có chắc chắn muốn xóa quỹ tiết kiệm này? Dữ liệu sẽ không thể khôi phục."
+        onConfirm={confirmDeleteAction}
+        onCancel={() => setConfirmDelete({ isOpen: false, id: null })}
+      />
     </div>
   );
 };

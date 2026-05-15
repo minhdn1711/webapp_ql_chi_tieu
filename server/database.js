@@ -28,11 +28,37 @@ const db = new sqlite3.Database(dbPath, (err) => {
       // Bảng danh mục
       db.run(`
         CREATE TABLE IF NOT EXISTS categories (
-          id TEXT PRIMARY KEY,
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
           label TEXT NOT NULL,
-          color TEXT NOT NULL
+          color TEXT NOT NULL,
+          type TEXT NOT NULL DEFAULT 'expense',
+          icon TEXT
         )
-      `);
+      `, () => {
+        // Migration: Thêm các cột nếu database cũ chưa có
+        db.run("ALTER TABLE categories ADD COLUMN type TEXT NOT NULL DEFAULT 'expense'", () => {});
+        db.run("ALTER TABLE categories ADD COLUMN icon TEXT", () => {});
+        
+        // Seed default categories if empty
+        db.get("SELECT COUNT(*) AS count FROM categories", (err, row) => {
+          if (row && row.count === 0) {
+            const stmt = db.prepare("INSERT INTO categories (label, color, type, icon) VALUES (?, ?, ?, ?)");
+            const defaults = [
+              ['Ăn uống', 'var(--accent-pink)', 'expense', '🍔'],
+              ['Tiền nhà', '#6d9177', 'expense', '🏠'],
+              ['Điện nước', '#E0A96D', 'expense', '⚡'],
+              ['Di chuyển', '#9B9B9B', 'expense', '🚗'],
+              ['Mua sắm', 'var(--primary-green)', 'expense', '🛍️'],
+              ['Lương', 'var(--primary-green)', 'income', '💰'],
+              ['Thưởng', '#E0A96D', 'income', '🎁'],
+              ['Khác', 'var(--text-muted)', 'expense', '📦'],
+              ['Khác', 'var(--text-muted)', 'income', '🧧']
+            ];
+            defaults.forEach(c => stmt.run(c));
+            stmt.finalize();
+          }
+        });
+      });
 
       // Bảng mục tiêu tiết kiệm
       db.run(`

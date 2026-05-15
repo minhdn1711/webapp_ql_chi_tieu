@@ -31,6 +31,48 @@ app.get('/api/goals', (req, res) => {
   });
 });
 
+// API: Quản lý danh mục
+app.get('/api/categories', (req, res) => {
+  db.all('SELECT * FROM categories', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.post('/api/categories', (req, res) => {
+  const { label, color, type, icon } = req.body;
+  if (!label || !color) return res.status(400).json({ error: 'Thiếu thông tin' });
+  const sql = 'INSERT INTO categories (label, color, type, icon) VALUES (?, ?, ?, ?)';
+  db.run(sql, [label, color, type || 'expense', icon || '📦'], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ id: this.lastID, label, color, type: type || 'expense', icon: icon || '📦' });
+  });
+});
+
+app.put('/api/categories/:id', (req, res) => {
+  const { id } = req.params;
+  const { label, color, type, icon } = req.body;
+  const sql = 'UPDATE categories SET label = ?, color = ?, type = ?, icon = ? WHERE id = ?';
+  db.run(sql, [label, color, type, icon, id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
+});
+
+app.delete('/api/categories/:id', (req, res) => {
+  const { id } = req.params;
+  // Kiểm tra xem có transaction nào đang dùng danh mục này không
+  db.get('SELECT COUNT(*) as count FROM transactions WHERE categoryId = ?', [id], (err, row) => {
+    if (row && row.count > 0) {
+      return res.status(400).json({ error: 'Không thể xóa danh mục đang có giao dịch' });
+    }
+    db.run('DELETE FROM categories WHERE id = ?', id, function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true });
+    });
+  });
+});
+
 // API: Lấy danh sách nợ (splits)
 app.get('/api/debts', (req, res) => {
   const sql = `

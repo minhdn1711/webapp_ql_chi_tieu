@@ -6,6 +6,7 @@ import AddTransaction from './screens/AddTransaction';
 import Transactions from './screens/Transactions';
 import SavingGoals from './screens/SavingGoals';
 import Debts from './screens/Debts';
+import CategoryManagement from './screens/CategoryManagement';
 import './App.css';
 
 const BottomNav = () => {
@@ -76,11 +77,13 @@ const Header = () => {
 };
 
 import { ToastProvider } from './context/ToastContext';
+import { CategoryProvider } from './context/CategoryContext';
 
 function App() {
   return (
-    <ToastProvider>
-      <Router>
+    <CategoryProvider>
+      <ToastProvider>
+        <Router>
         <Header />
         <Routes>
           <Route path="/" element={<Dashboard />} />
@@ -88,10 +91,12 @@ function App() {
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/goals" element={<SavingGoals />} />
           <Route path="/debts" element={<Debts />} />
+          <Route path="/categories" element={<CategoryManagement />} />
         </Routes>
         <BottomNavClean />
       </Router>
     </ToastProvider>
+    </CategoryProvider>
   );
 }
 
