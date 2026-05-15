@@ -9,6 +9,9 @@ RUN npm install
 # Copy source code
 COPY . .
 
+# Create data directory for SQLite
+RUN mkdir -p /app/data
+
 # Expose port 3000
 EXPOSE 3000
 
