@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Clock, CheckCircle, X } from 'lucide-react';
+import { formatCurrency } from '../utils/format';
 import './Debts.css';
 
 const Debts = () => {
@@ -47,9 +48,9 @@ const Debts = () => {
 
   if (loading) return <div className="screen-container">Đang tải...</div>;
 
-  const unpaidDebts = debts.filter(d => d.is_paid === 0);
-  const paidDebts = debts.filter(d => d.is_paid === 1);
-  const totalUnpaid = unpaidDebts.reduce((sum, d) => sum + (d.amount - d.paid_amount), 0);
+  const unpaidDebts = debts.filter(d => d && d.is_paid === 0);
+  const paidDebts = debts.filter(d => d && d.is_paid === 1);
+  const totalUnpaid = unpaidDebts.reduce((sum, d) => sum + ((d.amount || 0) - (d.paid_amount || 0)), 0);
 
   const displayedDebts = activeTab === 'unpaid' ? unpaidDebts : paidDebts;
 
@@ -57,7 +58,7 @@ const Debts = () => {
     <div className="screen-container">
       <div className="debt-summary card mb-6">
         <span className="debt-label">Tổng nợ còn lại</span>
-        <h2 className="debt-total">{totalUnpaid.toLocaleString()} đ</h2>
+        <h2 className="debt-total">{formatCurrency(totalUnpaid)} đ</h2>
       </div>
 
       <div className="tabs-container mb-4">
@@ -100,8 +101,8 @@ const Debts = () => {
                     </div>
                   </div>
                   <div className="debt-amount-info">
-                    <span className="debt-remaining">{remaining.toLocaleString()} đ</span>
-                    <p className="debt-total-label text-muted">/{debt.amount.toLocaleString()}</p>
+                    <span className="debt-remaining">{formatCurrency(remaining)} đ</span>
+                    <p className="debt-total-label text-muted">/{formatCurrency(debt.amount)}</p>
                   </div>
                 </div>
 
@@ -110,7 +111,7 @@ const Debts = () => {
                     <div className="progress-fill" style={{ width: `${progress}%`, backgroundColor: 'var(--primary-green)' }}></div>
                   </div>
                   <div className="flex-between mt-1">
-                    <span className="text-muted" style={{fontSize: '11px'}}>Đã trả: {debt.paid_amount.toLocaleString()} đ</span>
+                    <span className="text-muted" style={{fontSize: '11px'}}>Đã trả: {formatCurrency(debt.paid_amount)} đ</span>
                     <span className="text-muted" style={{fontSize: '11px'}}>{progress}%</span>
                   </div>
                 </div>
@@ -138,7 +139,7 @@ const Debts = () => {
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h3>Nhận tiền từ: {selectedDebt.person_name}</h3>
+              <h3>Nhận tiền từ: {selectedDebt?.person_name}</h3>
               <X onClick={() => setShowPayModal(false)} cursor="pointer" />
             </div>
             <form onSubmit={handlePayment}>
@@ -149,11 +150,11 @@ const Debts = () => {
                   value={payAmount} 
                   onChange={e => setPayAmount(e.target.value)}
                   placeholder="Nhập số tiền..."
-                  max={selectedDebt.amount - selectedDebt.paid_amount}
+                  max={(selectedDebt?.amount || 0) - (selectedDebt?.paid_amount || 0)}
                   required
                 />
                 <p className="text-muted mt-2" style={{fontSize: '12px'}}>
-                  Nợ còn lại: {(selectedDebt.amount - selectedDebt.paid_amount).toLocaleString()} đ
+                  Nợ còn lại: {formatCurrency((selectedDebt?.amount || 0) - (selectedDebt?.paid_amount || 0))} đ
                 </p>
               </div>
               <button type="submit" className="primary-btn mt-4">Xác nhận & Lưu khoản thu</button>

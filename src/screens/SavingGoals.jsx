@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X } from 'lucide-react';
+import { formatCurrency } from '../utils/format';
 import './SavingGoals.css';
 
 const SavingGoals = () => {
@@ -102,11 +103,11 @@ const SavingGoals = () => {
               <div className="goal-footer">
                 <div className="g-col">
                   <span className="g-label">Hiện có</span>
-                  <span className="g-amount" style={{ color: goal.color || '#10B981' }}>{goal.current.toLocaleString()} đ</span>
+                  <span className="g-amount" style={{ color: goal.color || '#10B981' }}>{formatCurrency(goal.current)} đ</span>
                 </div>
                 <div className="g-col text-right">
                   <span className="g-label">Mục tiêu</span>
-                  <span className="g-amount text-muted">{goal.target.toLocaleString()} đ</span>
+                   <span className="g-amount text-muted">{formatCurrency(goal.target)} đ</span>
                 </div>
               </div>
               

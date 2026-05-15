@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Filter, ShoppingBag, Utensils, Zap, Coffee, PiggyBank, Home as HomeIcon, CreditCard, Banknote } from 'lucide-react';
 import { CATEGORIES } from '../data/mockData';
+import { formatCurrency } from '../utils/format';
 import { useTransactions } from '../hooks/useTransactions';
 import './Transactions.css';
 
@@ -87,12 +88,12 @@ const Transactions = () => {
       <div className="card month-summary mb-6">
         <div className="summary-col">
           <span className="text-muted">Tổng thu</span>
-          <span className="font-semibold text-primary">{totalIncome.toLocaleString()} đ</span>
+          <span className="font-semibold text-primary">{formatCurrency(totalIncome)} đ</span>
         </div>
         <div className="summary-divider"></div>
         <div className="summary-col">
           <span className="text-muted">Tổng chi</span>
-          <span className="font-semibold text-accent">-{totalExpense.toLocaleString()} đ</span>
+          <span className="font-semibold text-accent">-{formatCurrency(totalExpense)} đ</span>
         </div>
       </div>
 
@@ -126,7 +127,7 @@ const Transactions = () => {
                   </div>
                 </div>
                 <div className={`t-amount ${t.type}`}>
-                  {t.type === 'income' ? '+' : '-'}{t.amount.toLocaleString()} đ
+                  {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)} đ
                 </div>
               </div>
             </React.Fragment>

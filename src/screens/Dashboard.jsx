@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Plus, ArrowDownCircle, ArrowUpCircle, TrendingUp, ChevronRight } from 'lucide-react';
 import { CATEGORIES } from '../data/mockData';
+import { formatCurrency } from '../utils/format';
 import { useTransactions } from '../hooks/useTransactions';
 import './Dashboard.css';
 
@@ -61,7 +62,7 @@ const Dashboard = () => {
   const topGoal = goals[0] || { title: 'Chưa có quỹ', current: 0, target: 1, icon: '💰' };
   const goalPercent = Math.round((topGoal.current / topGoal.target) * 100);
 
-  const totalDebt = debts.reduce((acc, curr) => acc + curr.amount, 0);
+  const totalDebt = (debts || []).reduce((acc, curr) => acc + (curr?.amount || 0), 0);
 
   return (
     <div className="screen-container">
@@ -69,7 +70,7 @@ const Dashboard = () => {
       <div className="summary-cards">
         <div className="card balance-card">
           <p className="form-label text-white-muted">Số dư còn lại</p>
-          <h2 className="balance-amount">{remainingBalance.toLocaleString()} đ</h2>
+          <h2 className="balance-amount">{formatCurrency(remainingBalance)} đ</h2>
           <div className="flex-between mt-4">
             <div className="income-expense">
               <ArrowDownCircle size={16} color="#F2C4C4" />
@@ -86,7 +87,7 @@ const Dashboard = () => {
           <NavLink to="/debts" className="card debt-summary-card flex-between" style={{textDecoration: 'none', color: 'inherit', marginTop: '-8px'}}>
             <div>
               <p className="form-label text-muted" style={{marginBottom: '4px'}}>Bạn bè đang nợ</p>
-              <h3 className="debt-amount-text" style={{color: 'var(--primary-green)', fontWeight: '800', margin: 0}}>+{totalDebt.toLocaleString()} đ</h3>
+              <h3 className="debt-amount-text" style={{color: 'var(--primary-green)', fontWeight: '800', margin: 0}}>+{formatCurrency(totalDebt)} đ</h3>
             </div>
             <ChevronRight size={20} color="var(--primary-green)" />
           </NavLink>
@@ -109,7 +110,7 @@ const Dashboard = () => {
                     height: `${Math.max((cat.amount / maxSpending) * 100, 10)}%`, 
                     backgroundColor: cat.color 
                   }}
-                  title={`${cat.amount.toLocaleString()} đ`}
+                  title={`${formatCurrency(cat.amount)} đ`}
                 ></div>
                 <span className="bar-label">{cat.label}</span>
               </div>
