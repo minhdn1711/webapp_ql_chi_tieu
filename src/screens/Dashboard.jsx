@@ -43,7 +43,10 @@ const Dashboard = () => {
   const totalExpense = useMemo(() => {
     return currentMonthTransactions
       .filter(t => t.type === 'expense')
-      .reduce((acc, curr) => acc + curr.amount, 0);
+      .reduce((acc, curr) => {
+        const splitAmount = curr.splits ? curr.splits.reduce((sum, s) => sum + s.amount, 0) : 0;
+        return acc + (curr.amount - splitAmount);
+      }, 0);
   }, [currentMonthTransactions]);
 
   const remainingBalance = totalIncome - totalExpense;
@@ -52,7 +55,9 @@ const Dashboard = () => {
   const categorySpending = useMemo(() => {
     const expenses = currentMonthTransactions.filter(t => t.type === 'expense');
     const grouped = expenses.reduce((acc, curr) => {
-      acc[curr.categoryId] = (acc[curr.categoryId] || 0) + curr.amount;
+      const splitAmount = curr.splits ? curr.splits.reduce((sum, s) => sum + s.amount, 0) : 0;
+      const netAmount = curr.amount - splitAmount;
+      acc[curr.categoryId] = (acc[curr.categoryId] || 0) + netAmount;
       return acc;
     }, {});
 
@@ -74,7 +79,9 @@ const Dashboard = () => {
   const payerSpending = useMemo(() => {
     const expenses = currentMonthTransactions.filter(t => t.type === 'expense');
     const grouped = expenses.reduce((acc, curr) => {
-      acc[curr.by] = (acc[curr.by] || 0) + curr.amount;
+      const splitAmount = curr.splits ? curr.splits.reduce((sum, s) => sum + s.amount, 0) : 0;
+      const netAmount = curr.amount - splitAmount;
+      acc[curr.by] = (acc[curr.by] || 0) + netAmount;
       return acc;
     }, { me: 0, partner: 0, shared: 0 });
 

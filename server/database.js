@@ -48,6 +48,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
               ['Tiền nhà', '#6d9177', 'expense', '🏠'],
               ['Điện nước', '#E0A96D', 'expense', '⚡'],
               ['Di chuyển', '#9B9B9B', 'expense', '🚗'],
+              ['Cho vay', '#3B82F6', 'expense', '🤝'],
               ['Mua sắm', 'var(--primary-green)', 'expense', '🛍️'],
               ['Lương', 'var(--primary-green)', 'income', '💰'],
               ['Thưởng', '#E0A96D', 'income', '🎁'],

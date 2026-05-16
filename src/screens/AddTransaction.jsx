@@ -63,6 +63,17 @@ const AddTransaction = ({ isEdit = false }) => {
     }
   }, [isEdit, id, navigate, addToast]);
 
+  // Auto-detect loan category
+  React.useEffect(() => {
+    const selectedCat = categories.find(c => c.id.toString() === categoryId);
+    if (selectedCat && selectedCat.label === 'Cho vay') {
+      setIsSplit(true);
+      setIncludeMe(false);
+      setIncludeWife(false);
+      setIncludeHusband(false);
+    }
+  }, [categoryId, categories]);
+
   const addPerson = () => {
     if (newPersonName.trim()) {
       setSplitPeople([...splitPeople, { name: newPersonName.trim(), amount: '' }]);
@@ -105,8 +116,8 @@ const AddTransaction = ({ isEdit = false }) => {
 
     if (isSplit) {
       const totalSplit = splitPeople.reduce((sum, p) => sum + getRawAmount(p.amount), 0);
-      if (totalSplit >= rawAmount) {
-        setError('Tổng số tiền chia sẻ cho người khác phải nhỏ hơn tổng số tiền chi.');
+      if (totalSplit > rawAmount) {
+        setError('Tổng số tiền chia sẻ cho người khác không được lớn hơn tổng số tiền chi.');
         return;
       }
     }

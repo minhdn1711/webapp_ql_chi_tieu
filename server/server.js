@@ -10,12 +10,22 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/api/transactions', (req, res) => {
-  db.all('SELECT * FROM transactions ORDER BY date DESC, id DESC', [], (err, rows) => {
+  db.all('SELECT * FROM transactions ORDER BY date DESC, id DESC', [], (err, transactions) => {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
     }
-    res.json(rows);
+    
+    // Lấy tất cả splits để map vào transactions
+    db.all('SELECT transaction_id, person_name as name, amount FROM splits', [], (err, splits) => {
+      if (err) return res.json(transactions); // Trả về transactions nếu lỗi split
+      
+      const enriched = transactions.map(t => ({
+        ...t,
+        splits: splits.filter(s => s.transaction_id === t.id)
+      }));
+      res.json(enriched);
+    });
   });
 });
 

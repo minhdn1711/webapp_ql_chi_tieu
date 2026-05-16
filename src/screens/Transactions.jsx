@@ -93,7 +93,10 @@ const Transactions = () => {
   const totalExpense = useMemo(() => {
     return filteredTransactions
       .filter(t => t.type === 'expense')
-      .reduce((acc, curr) => acc + curr.amount, 0);
+      .reduce((acc, curr) => {
+        const splitAmount = curr.splits ? curr.splits.reduce((sum, s) => sum + s.amount, 0) : 0;
+        return acc + (curr.amount - splitAmount);
+      }, 0);
   }, [filteredTransactions]);
 
   return (
@@ -228,10 +231,24 @@ const Transactions = () => {
                     <span>{category.label}</span>
                     <span className="dot">•</span>
                     <span>{getByName(t.by)}</span>
+                    {t.splits && t.splits.length > 0 && (
+                      <>
+                        <span className="dot">•</span>
+                        <span className="split-badge">Chia tiền</span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className={`t-amount ${t.type}`}>
-                  {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)} đ
+                  {t.type === 'income' ? '+' : '-'}
+                  {t.splits && t.splits.length > 0 ? (
+                    <>
+                      {formatCurrency(t.amount - t.splits.reduce((sum, s) => sum + s.amount, 0))} đ
+                      <span className="t-amount-total">Tổng: {formatCurrency(t.amount)}</span>
+                    </>
+                  ) : (
+                    <>{formatCurrency(t.amount)} đ</>
+                  )}
                 </div>
                 <div className="t-actions">
                   <Link 
