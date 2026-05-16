@@ -115,22 +115,28 @@ app.post('/api/transactions', (req, res) => {
 
     db.run(sql, params, function(err) {
       if (err) {
-        res.status(500).json({ error: err.message });
-        return;
+        console.error('Lỗi INSERT transaction:', err.message);
+        return res.status(500).json({ error: err.message });
       }
       
       const transactionId = this.lastID;
 
       // Nếu có thông tin chia tiền, thêm vào bảng splits
-      if (splits && Array.isArray(splits)) {
+      if (splits && Array.isArray(splits) && splits.length > 0) {
         const splitStmt = db.prepare('INSERT INTO splits (transaction_id, person_name, amount) VALUES (?, ?, ?)');
         splits.forEach(s => {
           splitStmt.run(transactionId, s.name, s.amount);
         });
-        splitStmt.finalize();
+        splitStmt.finalize((err) => {
+          if (err) {
+            console.error('Lỗi INSERT splits:', err.message);
+            // Vẫn trả về thành công vì transaction chính đã lưu
+          }
+          res.json({ id: transactionId, date, title, amount, type, categoryId, by, splits });
+        });
+      } else {
+        res.json({ id: transactionId, date, title, amount, type, categoryId, by });
       }
-
-      res.json({ id: transactionId, date, title, amount, type, categoryId, by });
     });
   });
 });

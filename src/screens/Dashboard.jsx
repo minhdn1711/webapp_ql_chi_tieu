@@ -25,10 +25,14 @@ const Dashboard = () => {
     fetch('/api/debts').then(res => res.json()).then(setDebts);
   }, []);
 
-  // Calculate for current month (May 2026 as per mock)
+  // Calculate for current month dynamically
+  const currentMonth = useMemo(() => {
+    return new Date().toISOString().substring(0, 7); // "YYYY-MM"
+  }, []);
+
   const currentMonthTransactions = useMemo(() => {
-    return transactions.filter(t => t.date.startsWith('2026-05'));
-  }, [transactions]);
+    return transactions.filter(t => t.date.startsWith(currentMonth));
+  }, [transactions, currentMonth]);
 
   const totalIncome = useMemo(() => {
     return currentMonthTransactions

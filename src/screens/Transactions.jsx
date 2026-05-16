@@ -49,7 +49,7 @@ const Transactions = () => {
     }, {});
   }, [categories]);
 
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // Default to current month
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7));
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   
