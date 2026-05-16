@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Plus, ArrowDownCircle, ArrowUpCircle, TrendingUp, ChevronRight } from 'lucide-react';
-import { formatCurrency } from '../utils/format';
+import { formatCurrency, formatInput, getRawAmount } from '../utils/format';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../context/CategoryContext';
 import './Dashboard.css';
@@ -95,8 +95,10 @@ const Dashboard = () => {
 
   // Total history net for overall balance
   const totalHistoryNet = useMemo(() => {
-    return transactions.reduce((acc, curr) => {
-      return curr.type === 'income' ? acc + curr.amount : acc - curr.amount;
+    return (transactions || []).reduce((acc, curr) => {
+      if (!curr) return acc;
+      const amt = Number(curr.amount) || 0;
+      return curr.type === 'income' ? acc + amt : acc - amt;
     }, 0);
   }, [transactions]);
 
@@ -144,7 +146,7 @@ const Dashboard = () => {
 
     if (sorted.length <= 7) return sorted;
     const top6 = sorted.slice(0, 6);
-    const othersAmount = sorted.slice(6).reduce((acc, curr) => acc + curr.amount, 0);
+    const othersAmount = sorted.slice(6).reduce((acc, curr) => acc + (curr.amount || 0), 0);
     return [...top6, { id: 'other', label: 'Khác', color: 'var(--text-muted)', amount: othersAmount }];
   }, [currentMonthTransactions, categoriesMap]);
 
