@@ -103,7 +103,7 @@ const Dashboard = () => {
   }, [transactions]);
 
   const totalSaved = useMemo(() => {
-    return (goals || []).reduce((acc, g) => acc + (g.current || 0), 0);
+    return (goals || []).reduce((acc, g) => acc + Number(g.current || 0), 0);
   }, [goals]);
 
   const actualBalance = getRawAmount(settings.initial_balance) + totalHistoryNet - totalSaved;
@@ -193,15 +193,15 @@ const Dashboard = () => {
             </div>
             <div className="breakdown-item">
               <span>Tổng thu (+)</span>
-              <span>{formatCurrency((transactions || []).filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0))}</span>
+              <span>{formatCurrency((transactions || []).filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount || 0), 0))}</span>
             </div>
             <div className="breakdown-item">
               <span>Tổng chi (-)</span>
-              <span>{formatCurrency((transactions || []).filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0))}</span>
+              <span>{formatCurrency((transactions || []).filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount || 0), 0))}</span>
             </div>
             <div className="breakdown-item">
               <span>Tiết kiệm (-)</span>
-              <span>{formatCurrency(totalSaved)}</span>
+              <span>{formatCurrency((goals || []).reduce((s, g) => s + Number(g.current || 0), 0))}</span>
             </div>
           </div>
           <div className="flex-between mt-4">
