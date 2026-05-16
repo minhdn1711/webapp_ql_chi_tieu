@@ -13,7 +13,7 @@ const Dashboard = () => {
   const [debts, setDebts] = useState([]);
   const [settings, setSettings] = useState({ initial_balance: '0', gold_amount: '0' });
   const [isEditingAssets, setIsEditingAssets] = useState(false);
-  const [tempSettings, setTempSettings] = useState({ initial_balance: '0', gold_amount: '0' });
+  const [tempSettings, setTempSettings] = useState({ initial_balance: '', gold_amount: '' });
 
   // Create a lookup map for categories with legacy support
   const categoriesMap = useMemo(() => {
@@ -46,18 +46,28 @@ const Dashboard = () => {
     fetch('/api/debts').then(res => res.json()).then(setDebts).catch(() => setDebts([]));
     fetch('/api/settings').then(res => res.json()).then(data => {
       setSettings(data);
-      setTempSettings(data);
+      // Format the initial_balance for the input field
+      setTempSettings({
+        ...data,
+        initial_balance: formatInput(data.initial_balance)
+      });
     }).catch(() => {});
   }, []);
 
   const saveSettings = async () => {
+    // Convert tempSettings back to raw numbers before saving
+    const toSave = {
+      ...tempSettings,
+      initial_balance: getRawAmount(tempSettings.initial_balance).toString()
+    };
+    
     const res = await fetch('/api/settings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(tempSettings)
+      body: JSON.stringify(toSave)
     });
     if (res.ok) {
-      setSettings(tempSettings);
+      setSettings(toSave);
       setIsEditingAssets(false);
     }
   };
@@ -94,7 +104,7 @@ const Dashboard = () => {
     return (goals || []).reduce((acc, g) => acc + (g.current || 0), 0);
   }, [goals]);
 
-  const actualBalance = Number(settings.initial_balance || 0) + totalHistoryNet - totalSaved;
+  const actualBalance = getRawAmount(settings.initial_balance) + totalHistoryNet - totalSaved;
 
   const totalReceivable = useMemo(() => {
     return currentMonthTransactions
@@ -221,10 +231,10 @@ const Dashboard = () => {
             <span className="asset-label">Tiền ban đầu:</span>
             {isEditingAssets ? (
               <input 
-                type="number" 
+                type="text" 
                 className="asset-input"
                 value={tempSettings.initial_balance}
-                onChange={e => setTempSettings({...tempSettings, initial_balance: e.target.value})}
+                onChange={e => setTempSettings({...tempSettings, initial_balance: formatInput(e.target.value)})}
               />
             ) : (
               <span className="asset-value">{formatCurrency(settings.initial_balance)} đ</span>
