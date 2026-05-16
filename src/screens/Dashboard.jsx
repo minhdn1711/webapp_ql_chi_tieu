@@ -90,7 +90,11 @@ const Dashboard = () => {
     }, 0);
   }, [transactions]);
 
-  const actualBalance = Number(settings.initial_balance || 0) + totalHistoryNet;
+  const totalSaved = useMemo(() => {
+    return (goals || []).reduce((acc, g) => acc + (g.current || 0), 0);
+  }, [goals]);
+
+  const actualBalance = Number(settings.initial_balance || 0) + totalHistoryNet - totalSaved;
 
   const totalReceivable = useMemo(() => {
     return currentMonthTransactions
@@ -167,8 +171,8 @@ const Dashboard = () => {
         <div className="card balance-card">
           <p className="form-label text-white-muted">Số dư thực tế</p>
           <h2 className="balance-amount">{formatCurrency(actualBalance)} đ</h2>
-          <p className="text-white-muted" style={{fontSize: '11px', marginTop: '4px'}}>
-            (Bao gồm {formatCurrency(settings.initial_balance)} đ ban đầu)
+          <p className="text-white-muted" style={{fontSize: '11px', marginTop: '4px', opacity: 0.9}}>
+            (Gồm {formatCurrency(settings.initial_balance)} đ đầu, trừ {formatCurrency(totalSaved)} đ đã nạp quỹ)
           </p>
           <div className="flex-between mt-4">
             <div className="income-expense">
