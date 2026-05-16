@@ -109,7 +109,7 @@ const Transactions = () => {
   const totalExpense = useMemo(() => {
     return filteredTransactions
       .filter(t => t.type === 'expense')
-      .reduce((acc, curr) => acc + (curr.amount || 0), 0);
+      .reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
   }, [filteredTransactions]);
 
   return (
