@@ -184,8 +184,26 @@ const Dashboard = () => {
           <p className="form-label text-white-muted">Số dư thực tế</p>
           <h2 className="balance-amount">{formatCurrency(actualBalance)} đ</h2>
           <p className="text-white-muted" style={{fontSize: '11px', marginTop: '4px', opacity: 0.9}}>
-            (Gồm {formatCurrency(settings.initial_balance)} đ đầu, trừ {formatCurrency(totalSaved)} đ đã nạp quỹ)
+            (Dựa trên tiền ban đầu và toàn bộ lịch sử)
           </p>
+          <div className="balance-breakdown mt-4">
+            <div className="breakdown-item">
+              <span>Tiền ban đầu</span>
+              <span>{formatCurrency(getRawAmount(settings.initial_balance))}</span>
+            </div>
+            <div className="breakdown-item">
+              <span>Tổng thu (+)</span>
+              <span>{formatCurrency((transactions || []).filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0))}</span>
+            </div>
+            <div className="breakdown-item">
+              <span>Tổng chi (-)</span>
+              <span>{formatCurrency((transactions || []).filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0))}</span>
+            </div>
+            <div className="breakdown-item">
+              <span>Tiết kiệm (-)</span>
+              <span>{formatCurrency(totalSaved)}</span>
+            </div>
+          </div>
           <div className="flex-between mt-4">
             <div className="income-expense">
               <ArrowDownCircle size={16} color="#F2C4C4" />
