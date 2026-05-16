@@ -16,7 +16,11 @@ const Dashboard = () => {
   const categoriesMap = useMemo(() => {
     const map = (categories || []).reduce((acc, cat) => {
       if (cat && cat.id) acc[cat.id.toString()] = cat;
-      if (cat && cat.label) acc[cat.label.toLowerCase()] = cat;
+      if (cat && cat.label) {
+        acc[cat.label.toLowerCase()] = cat;
+        // Also map by direct label for some legacy cases
+        acc[cat.label] = cat;
+      }
       return acc;
     }, {});
 
@@ -75,7 +79,13 @@ const Dashboard = () => {
   const categorySpending = useMemo(() => {
     const expenses = currentMonthTransactions.filter(t => t.type === 'expense');
     const grouped = expenses.reduce((acc, curr) => {
-      const catId = curr.categoryId || 'other';
+      let catId = 'other';
+      if (curr.categoryId) {
+        catId = curr.categoryId.toString();
+      } else if (curr.category) {
+        // Fallback for some very old data that might have 'category' field
+        catId = curr.category.toString();
+      }
       acc[catId] = (acc[catId] || 0) + (curr.amount || 0);
       return acc;
     }, {});
@@ -84,14 +94,16 @@ const Dashboard = () => {
       .map(([id, amount]) => ({
         id,
         amount,
-        ...(categoriesMap[id] || { label: 'Khác', color: 'var(--text-muted)' })
+        ...(categoriesMap[id] || 
+            categoriesMap[id.toLowerCase()] || 
+            { label: 'Khác', color: 'var(--text-muted)' })
       }))
       .sort((a, b) => b.amount - a.amount);
 
-    if (sorted.length <= 4) return sorted;
-    const top3 = sorted.slice(0, 3);
-    const othersAmount = sorted.slice(3).reduce((acc, curr) => acc + curr.amount, 0);
-    return [...top3, { id: 'other', label: 'Khác', color: 'var(--text-muted)', amount: othersAmount }];
+    if (sorted.length <= 7) return sorted;
+    const top6 = sorted.slice(0, 6);
+    const othersAmount = sorted.slice(6).reduce((acc, curr) => acc + curr.amount, 0);
+    return [...top6, { id: 'other', label: 'Khác', color: 'var(--text-muted)', amount: othersAmount }];
   }, [currentMonthTransactions, categoriesMap]);
 
   // Calculate spending by payer
