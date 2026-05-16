@@ -73,6 +73,24 @@ const db = new sqlite3.Database(dbPath, (err) => {
         )
       `);
 
+      // Bảng cài đặt hệ thống (Số tiền ban đầu, Vàng...)
+      db.run(`
+        CREATE TABLE IF NOT EXISTS settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        )
+      `, () => {
+        // Seed default settings
+        db.get("SELECT COUNT(*) AS count FROM settings", (err, row) => {
+          if (row && row.count === 0) {
+            const stmt = db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)");
+            stmt.run(['initial_balance', '0']);
+            stmt.run(['gold_amount', '0']);
+            stmt.finalize();
+          }
+        });
+      });
+
       // Bảng chia tiền (Split bill)
       db.run(`
         CREATE TABLE IF NOT EXISTS splits (

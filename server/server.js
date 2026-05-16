@@ -295,6 +295,35 @@ app.delete('/api/goals/:id', (req, res) => {
   });
 });
 
+// API: Lấy cài đặt hệ thống
+app.get('/api/settings', (req, res) => {
+  db.all('SELECT * FROM settings', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const settings = rows.reduce((acc, row) => {
+      acc[row.key] = row.value;
+      return acc;
+    }, {});
+    res.json(settings);
+  });
+});
+
+// API: Cập nhật cài đặt
+app.post('/api/settings', (req, res) => {
+  const settings = req.body; // { key: value }
+  const keys = Object.keys(settings);
+  
+  db.serialize(() => {
+    const stmt = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
+    keys.forEach(key => {
+      stmt.run(key, settings[key].toString());
+    });
+    stmt.finalize((err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true });
+    });
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server đang chạy tại http://localhost:${PORT}`);
 });

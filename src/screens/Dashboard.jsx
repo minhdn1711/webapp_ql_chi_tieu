@@ -11,6 +11,9 @@ const Dashboard = () => {
   const { categories } = useCategories();
   const [goals, setGoals] = useState([]);
   const [debts, setDebts] = useState([]);
+  const [settings, setSettings] = useState({ initial_balance: '0', gold_amount: '0' });
+  const [isEditingAssets, setIsEditingAssets] = useState(false);
+  const [tempSettings, setTempSettings] = useState({ initial_balance: '0', gold_amount: '0' });
 
   // Create a lookup map for categories with legacy support
   const categoriesMap = useMemo(() => {
@@ -41,7 +44,23 @@ const Dashboard = () => {
   useEffect(() => {
     fetch('/api/goals').then(res => res.json()).then(setGoals).catch(() => setGoals([]));
     fetch('/api/debts').then(res => res.json()).then(setDebts).catch(() => setDebts([]));
+    fetch('/api/settings').then(res => res.json()).then(data => {
+      setSettings(data);
+      setTempSettings(data);
+    }).catch(() => {});
   }, []);
+
+  const saveSettings = async () => {
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(tempSettings)
+    });
+    if (res.ok) {
+      setSettings(tempSettings);
+      setIsEditingAssets(false);
+    }
+  };
 
   // Calculate for current month dynamically
   const currentMonth = useMemo(() => {
@@ -63,6 +82,15 @@ const Dashboard = () => {
       .filter(t => t.type === 'expense')
       .reduce((acc, curr) => acc + (curr.amount || 0), 0);
   }, [currentMonthTransactions]);
+
+  // Total history net for overall balance
+  const totalHistoryNet = useMemo(() => {
+    return transactions.reduce((acc, curr) => {
+      return curr.type === 'income' ? acc + curr.amount : acc - curr.amount;
+    }, 0);
+  }, [transactions]);
+
+  const actualBalance = Number(settings.initial_balance || 0) + totalHistoryNet;
 
   const totalReceivable = useMemo(() => {
     return currentMonthTransactions
@@ -137,8 +165,11 @@ const Dashboard = () => {
       {/* Summary Cards */}
       <div className="summary-cards">
         <div className="card balance-card">
-          <p className="form-label text-white-muted">Số dư còn lại</p>
-          <h2 className="balance-amount">{formatCurrency(remainingBalance)} đ</h2>
+          <p className="form-label text-white-muted">Số dư thực tế</p>
+          <h2 className="balance-amount">{formatCurrency(actualBalance)} đ</h2>
+          <p className="text-white-muted" style={{fontSize: '11px', marginTop: '4px'}}>
+            (Bao gồm {formatCurrency(settings.initial_balance)} đ ban đầu)
+          </p>
           <div className="flex-between mt-4">
             <div className="income-expense">
               <ArrowDownCircle size={16} color="#F2C4C4" />
@@ -165,6 +196,53 @@ const Dashboard = () => {
             <ChevronRight size={20} color="var(--primary-green)" />
           </NavLink>
         )}
+      </div>
+
+      {/* Asset Management Card */}
+      <div className="card mb-6 asset-card">
+        <div className="flex-between mb-4">
+          <h3 style={{fontSize: '16px'}}>Tài sản & Cài đặt</h3>
+          {!isEditingAssets ? (
+            <button className="text-link" onClick={() => setIsEditingAssets(true)}>Sửa</button>
+          ) : (
+            <div className="flex-row gap-2">
+              <button className="text-link" onClick={() => setIsEditingAssets(false)}>Hủy</button>
+              <button className="text-link font-bold" onClick={saveSettings}>Lưu</button>
+            </div>
+          )}
+        </div>
+        
+        <div className="asset-grid">
+          <div className="asset-item">
+            <span className="asset-label">Tiền ban đầu:</span>
+            {isEditingAssets ? (
+              <input 
+                type="number" 
+                className="asset-input"
+                value={tempSettings.initial_balance}
+                onChange={e => setTempSettings({...tempSettings, initial_balance: e.target.value})}
+              />
+            ) : (
+              <span className="asset-value">{formatCurrency(settings.initial_balance)} đ</span>
+            )}
+          </div>
+          <div className="asset-item">
+            <span className="asset-label">Vàng đang có:</span>
+            {isEditingAssets ? (
+              <input 
+                type="text" 
+                className="asset-input"
+                placeholder="VD: 5 chỉ, 2 cây..."
+                value={tempSettings.gold_amount}
+                onChange={e => setTempSettings({...tempSettings, gold_amount: e.target.value})}
+              />
+            ) : (
+              <span className="asset-value" style={{color: '#E0A96D', fontWeight: '700'}}>
+                {settings.gold_amount || '0'}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Spending Chart */}
