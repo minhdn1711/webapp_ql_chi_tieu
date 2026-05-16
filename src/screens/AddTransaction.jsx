@@ -74,8 +74,9 @@ const AddTransaction = ({ isEdit = false }) => {
 
   // Handle category change with auto-detection for loans
   const handleCategoryChange = (val) => {
+    if (val === null || val === undefined) return;
     setCategoryId(val);
-    const selectedCat = categories.find(c => c.id && c.id.toString() === val.toString());
+    const selectedCat = (categories || []).find(c => c.id && c.id.toString() === val.toString());
     if (selectedCat && selectedCat.label === 'Cho vay') {
       setIsSplit(true);
       setIncludeMe(false);
@@ -140,7 +141,8 @@ const AddTransaction = ({ isEdit = false }) => {
     // Default title if not provided
     let finalTitle = title.trim();
     if (!finalTitle) {
-      const selectedCat = categories.find(c => c.id && c.id.toString() === categoryId.toString());
+      const catIdStr = categoryId !== null && categoryId !== undefined ? categoryId.toString() : '';
+      const selectedCat = (categories || []).find(c => c.id && c.id.toString() === catIdStr);
       finalTitle = selectedCat ? selectedCat.label : 'Giao dịch';
     }
 

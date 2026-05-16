@@ -227,7 +227,7 @@ const Transactions = () => {
 
         {filteredTransactions.map((t, index) => {
           const showDate = index === 0 || filteredTransactions[index - 1].date !== t.date;
-          const categoryIdStr = t.categoryId ? t.categoryId.toString() : 'other';
+          const categoryIdStr = (t && t.categoryId) ? t.categoryId.toString() : 'other';
           const category = categoriesMap[categoryIdStr] || { label: 'Khác', color: 'var(--text-muted)', icon: '📦' };
           
           return (

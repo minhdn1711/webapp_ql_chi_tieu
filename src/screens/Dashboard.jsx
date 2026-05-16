@@ -14,10 +14,9 @@ const Dashboard = () => {
 
   // Create a lookup map for categories with legacy support
   const categoriesMap = useMemo(() => {
-    const map = categories.reduce((acc, cat) => {
-      acc[cat.id.toString()] = cat;
-      // Also map by lowercase label for robustness
-      acc[cat.label.toLowerCase()] = cat;
+    const map = (categories || []).reduce((acc, cat) => {
+      if (cat && cat.id) acc[cat.id.toString()] = cat;
+      if (cat && cat.label) acc[cat.label.toLowerCase()] = cat;
       return acc;
     }, {});
 
@@ -36,8 +35,8 @@ const Dashboard = () => {
   }, [categories]);
 
   useEffect(() => {
-    fetch('/api/goals').then(res => res.json()).then(setGoals);
-    fetch('/api/debts').then(res => res.json()).then(setDebts);
+    fetch('/api/goals').then(res => res.json()).then(setGoals).catch(() => setGoals([]));
+    fetch('/api/debts').then(res => res.json()).then(setDebts).catch(() => setDebts([]));
   }, []);
 
   // Calculate for current month dynamically
@@ -46,26 +45,26 @@ const Dashboard = () => {
   }, []);
 
   const currentMonthTransactions = useMemo(() => {
-    return transactions.filter(t => t.date.startsWith(currentMonth));
+    return (transactions || []).filter(t => t && t.date && t.date.startsWith(currentMonth));
   }, [transactions, currentMonth]);
 
   const totalIncome = useMemo(() => {
     return currentMonthTransactions
       .filter(t => t.type === 'income')
-      .reduce((acc, curr) => acc + curr.amount, 0);
+      .reduce((acc, curr) => acc + (curr.amount || 0), 0);
   }, [currentMonthTransactions]);
 
   const totalExpense = useMemo(() => {
     return currentMonthTransactions
       .filter(t => t.type === 'expense')
-      .reduce((acc, curr) => acc + curr.amount, 0);
+      .reduce((acc, curr) => acc + (curr.amount || 0), 0);
   }, [currentMonthTransactions]);
 
   const totalReceivable = useMemo(() => {
     return currentMonthTransactions
       .filter(t => t.type === 'expense')
       .reduce((acc, curr) => {
-        const splitAmount = curr.splits ? curr.splits.reduce((sum, s) => sum + s.amount, 0) : 0;
+        const splitAmount = curr.splits ? curr.splits.reduce((sum, s) => sum + (s.amount || 0), 0) : 0;
         return acc + splitAmount;
       }, 0);
   }, [currentMonthTransactions]);
@@ -76,7 +75,8 @@ const Dashboard = () => {
   const categorySpending = useMemo(() => {
     const expenses = currentMonthTransactions.filter(t => t.type === 'expense');
     const grouped = expenses.reduce((acc, curr) => {
-      acc[curr.categoryId] = (acc[curr.categoryId] || 0) + curr.amount;
+      const catId = curr.categoryId || 'other';
+      acc[catId] = (acc[catId] || 0) + (curr.amount || 0);
       return acc;
     }, {});
 
