@@ -192,15 +192,15 @@ const Dashboard = () => {
               <span>{formatCurrency(getRawAmount(settings.initial_balance))}</span>
             </div>
             <div className="breakdown-item">
-              <span>Tổng thu (+)</span>
+              <span>Tổng thu (Lịch sử)</span>
               <span>{formatCurrency((transactions || []).filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount || 0), 0))}</span>
             </div>
             <div className="breakdown-item">
-              <span>Tổng chi (-)</span>
+              <span>Tổng chi (Lịch sử)</span>
               <span>{formatCurrency((transactions || []).filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount || 0), 0))}</span>
             </div>
             <div className="breakdown-item">
-              <span>Tiết kiệm (-)</span>
+              <span>Tiết kiệm (Đang có)</span>
               <span>{formatCurrency((goals || []).reduce((s, g) => s + Number(g.current || 0), 0))}</span>
             </div>
           </div>
