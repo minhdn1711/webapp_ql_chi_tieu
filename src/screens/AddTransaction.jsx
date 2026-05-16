@@ -27,6 +27,11 @@ const AddTransaction = ({ isEdit = false }) => {
   const [splitPeople, setSplitPeople] = useState([]);
   const [newPersonName, setNewPersonName] = useState('');
   
+  // Participants to include in equal split
+  const [includeMe, setIncludeMe] = useState(true);
+  const [includeWife, setIncludeWife] = useState(false);
+  const [includeHusband, setIncludeHusband] = useState(false);
+  
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(isEdit);
 
@@ -77,8 +82,12 @@ const AddTransaction = ({ isEdit = false }) => {
 
   const autoSplit = () => {
     const rawAmt = getRawAmount(amount);
-    if (!rawAmt || splitPeople.length === 0) return;
-    const splitAmount = Math.floor(rawAmt / (splitPeople.length + 1));
+    if (!rawAmt) return;
+    
+    const participantsCount = (includeMe ? 1 : 0) + (includeWife ? 1 : 0) + (includeHusband ? 1 : 0) + splitPeople.length;
+    if (participantsCount === 0) return;
+
+    const splitAmount = Math.floor(rawAmt / participantsCount);
     const newPeople = splitPeople.map(p => ({ ...p, amount: formatInput(splitAmount) }));
     setSplitPeople(newPeople);
   };
@@ -274,6 +283,24 @@ const AddTransaction = ({ isEdit = false }) => {
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addPerson())}
                   />
                   <button type="button" onClick={addPerson} className="btn-add-person">Thêm</button>
+                </div>
+
+                <div className="participants-selector mb-4">
+                  <p className="text-muted mb-2" style={{fontSize: '13px'}}>Bao gồm trong chia đều:</p>
+                  <div className="flex-row gap-2">
+                    <label className={`participant-chip ${includeMe ? 'active' : ''}`}>
+                      <input type="checkbox" checked={includeMe} onChange={() => setIncludeMe(!includeMe)} />
+                      Tôi
+                    </label>
+                    <label className={`participant-chip ${includeWife ? 'active' : ''}`}>
+                      <input type="checkbox" checked={includeWife} onChange={() => setIncludeWife(!includeWife)} />
+                      Vợ
+                    </label>
+                    <label className={`participant-chip ${includeHusband ? 'active' : ''}`}>
+                      <input type="checkbox" checked={includeHusband} onChange={() => setIncludeHusband(!includeHusband)} />
+                      Chồng
+                    </label>
+                  </div>
                 </div>
 
                 {splitPeople.length > 0 && (
