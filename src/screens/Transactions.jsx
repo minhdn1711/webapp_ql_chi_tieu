@@ -45,7 +45,10 @@ const Transactions = () => {
   const categoriesMap = useMemo(() => {
     const map = (categories || []).reduce((acc, cat) => {
       if (cat && cat.id) acc[cat.id.toString()] = cat;
-      if (cat && cat.label) acc[cat.label.toLowerCase()] = cat;
+      if (cat && cat.label) {
+        acc[cat.label.toLowerCase()] = cat;
+        acc[cat.label] = cat;
+      }
       return acc;
     }, {});
 
@@ -225,7 +228,9 @@ const Transactions = () => {
         {filteredTransactions.map((t, index) => {
           const showDate = index === 0 || filteredTransactions[index - 1].date !== t.date;
           const categoryIdStr = (t && t.categoryId) ? t.categoryId.toString() : 'other';
-          const category = categoriesMap[categoryIdStr] || { label: 'Khác', color: 'var(--text-muted)', icon: '📦' };
+          const category = categoriesMap[categoryIdStr] || 
+                           categoriesMap[categoryIdStr.toLowerCase()] ||
+                           { label: 'Khác', color: 'var(--text-muted)', icon: '📦' };
           
           return (
             <React.Fragment key={t.id}>
