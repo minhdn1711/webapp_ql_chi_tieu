@@ -63,16 +63,17 @@ const AddTransaction = ({ isEdit = false }) => {
     }
   }, [isEdit, id, navigate, addToast]);
 
-  // Auto-detect loan category
-  React.useEffect(() => {
-    const selectedCat = categories.find(c => c.id.toString() === categoryId);
+  // Handle category change with auto-detection for loans
+  const handleCategoryChange = (val) => {
+    setCategoryId(val);
+    const selectedCat = categories.find(c => c.id && c.id.toString() === val.toString());
     if (selectedCat && selectedCat.label === 'Cho vay') {
       setIsSplit(true);
       setIncludeMe(false);
       setIncludeWife(false);
       setIncludeHusband(false);
     }
-  }, [categoryId, categories]);
+  };
 
   const addPerson = () => {
     if (newPersonName.trim()) {
@@ -130,8 +131,8 @@ const AddTransaction = ({ isEdit = false }) => {
     // Default title if not provided
     let finalTitle = title.trim();
     if (!finalTitle) {
-      const selectEl = e.target.querySelector('select');
-      finalTitle = selectEl.options[selectEl.selectedIndex].text;
+      const selectedCat = categories.find(c => c.id && c.id.toString() === categoryId.toString());
+      finalTitle = selectedCat ? selectedCat.label : 'Giao dịch';
     }
 
     const newTransaction = {
@@ -222,7 +223,7 @@ const AddTransaction = ({ isEdit = false }) => {
           <select 
             className="form-select" 
             value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
+            onChange={(e) => handleCategoryChange(e.target.value)}
           >
             <option value="" disabled>Chọn danh mục...</option>
             {categories.filter(c => c.type === type).map(cat => (
