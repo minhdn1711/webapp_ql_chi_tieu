@@ -72,6 +72,17 @@ const Dashboard = () => {
     }
   };
 
+  const clearAllData = async () => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử giao dịch và quỹ tiết kiệm? Hành động này không thể hoàn tác.')) {
+      // We'll need to add a server endpoint for this, or just delete everything via existing APIs if possible
+      // For now, let's assume we add a /api/system/reset endpoint
+      const res = await fetch('/api/system/reset', { method: 'POST' });
+      if (res.ok) {
+        window.location.reload();
+      }
+    }
+  };
+
   // Calculate for current month dynamically
   const currentMonth = useMemo(() => {
     return new Date().toISOString().substring(0, 7); // "YYYY-MM"
@@ -97,7 +108,7 @@ const Dashboard = () => {
   const totalHistoryNet = useMemo(() => {
     return (transactions || []).reduce((acc, curr) => {
       if (!curr) return acc;
-      const amt = Number(curr.amount) || 0;
+      const amt = parseInt(curr.amount, 10) || 0;
       return curr.type === 'income' ? acc + amt : acc - amt;
     }, 0);
   }, [transactions]);
@@ -257,7 +268,7 @@ const Dashboard = () => {
                 onChange={e => setTempSettings({...tempSettings, initial_balance: formatInput(e.target.value)})}
               />
             ) : (
-              <span className="asset-value">{formatCurrency(settings.initial_balance)} đ</span>
+              <span className="asset-value">{formatCurrency(getRawAmount(settings.initial_balance))} đ</span>
             )}
           </div>
           <div className="asset-item">
@@ -277,6 +288,18 @@ const Dashboard = () => {
             )}
           </div>
         </div>
+        
+        {isEditingAssets && (
+          <div className="mt-4 pt-4 border-top">
+            <button 
+              className="btn-outline-danger w-full" 
+              onClick={clearAllData}
+              style={{color: '#dc3545', border: '1px solid #dc3545', padding: '8px', borderRadius: '8px', width: '100%', background: 'transparent'}}
+            >
+              Xóa sạch lịch sử giao dịch & Quỹ
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Spending Chart */}

@@ -324,6 +324,17 @@ app.post('/api/settings', (req, res) => {
   });
 });
 
+// API: Xóa sạch dữ liệu hệ thống
+app.post('/api/system/reset', (req, res) => {
+  db.serialize(() => {
+    db.run('DELETE FROM transactions');
+    db.run('DELETE FROM splits');
+    db.run('DELETE FROM goals');
+    // Giữ lại categories và settings
+    res.json({ success: true });
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server đang chạy tại http://localhost:${PORT}`);
 });
