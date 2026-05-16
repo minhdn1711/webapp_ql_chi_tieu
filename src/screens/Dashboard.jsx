@@ -12,12 +12,27 @@ const Dashboard = () => {
   const [goals, setGoals] = useState([]);
   const [debts, setDebts] = useState([]);
 
-  // Create a lookup map for categories
+  // Create a lookup map for categories with legacy support
   const categoriesMap = useMemo(() => {
-    return categories.reduce((acc, cat) => {
-      acc[cat.id] = cat;
+    const map = categories.reduce((acc, cat) => {
+      acc[cat.id.toString()] = cat;
+      // Also map by lowercase label for robustness
+      acc[cat.label.toLowerCase()] = cat;
       return acc;
     }, {});
+
+    // Legacy mapping for hardcoded string IDs
+    const legacy = {
+      'food': { label: 'Ăn uống', color: 'var(--accent-pink)', icon: '🍔' },
+      'rent': { label: 'Tiền nhà', color: '#6d9177', icon: '🏠' },
+      'utilities': { label: 'Điện nước', color: '#E0A96D', icon: '⚡' },
+      'transport': { label: 'Di chuyển', color: '#9B9B9B', icon: '🚗' },
+      'shopping': { label: 'Mua sắm', color: 'var(--primary-green)', icon: '🛍️' },
+      'salary': { label: 'Lương', color: 'var(--primary-green)', icon: '💰' },
+      'bonus': { label: 'Thưởng', color: '#E0A96D', icon: '🎁' }
+    };
+
+    return { ...legacy, ...map };
   }, [categories]);
 
   useEffect(() => {
@@ -43,9 +58,15 @@ const Dashboard = () => {
   const totalExpense = useMemo(() => {
     return currentMonthTransactions
       .filter(t => t.type === 'expense')
+      .reduce((acc, curr) => acc + curr.amount, 0);
+  }, [currentMonthTransactions]);
+
+  const totalReceivable = useMemo(() => {
+    return currentMonthTransactions
+      .filter(t => t.type === 'expense')
       .reduce((acc, curr) => {
         const splitAmount = curr.splits ? curr.splits.reduce((sum, s) => sum + s.amount, 0) : 0;
-        return acc + (curr.amount - splitAmount);
+        return acc + splitAmount;
       }, 0);
   }, [currentMonthTransactions]);
 
@@ -55,9 +76,7 @@ const Dashboard = () => {
   const categorySpending = useMemo(() => {
     const expenses = currentMonthTransactions.filter(t => t.type === 'expense');
     const grouped = expenses.reduce((acc, curr) => {
-      const splitAmount = curr.splits ? curr.splits.reduce((sum, s) => sum + s.amount, 0) : 0;
-      const netAmount = curr.amount - splitAmount;
-      acc[curr.categoryId] = (acc[curr.categoryId] || 0) + netAmount;
+      acc[curr.categoryId] = (acc[curr.categoryId] || 0) + curr.amount;
       return acc;
     }, {});
 
@@ -79,9 +98,7 @@ const Dashboard = () => {
   const payerSpending = useMemo(() => {
     const expenses = currentMonthTransactions.filter(t => t.type === 'expense');
     const grouped = expenses.reduce((acc, curr) => {
-      const splitAmount = curr.splits ? curr.splits.reduce((sum, s) => sum + s.amount, 0) : 0;
-      const netAmount = curr.amount - splitAmount;
-      acc[curr.by] = (acc[curr.by] || 0) + netAmount;
+      acc[curr.by] = (acc[curr.by] || 0) + curr.amount;
       return acc;
     }, { me: 0, partner: 0, shared: 0 });
 
@@ -120,6 +137,11 @@ const Dashboard = () => {
               <span>Chi: {(totalExpense / 1000000).toFixed(1)}Tr</span>
             </div>
           </div>
+          {totalReceivable > 0 && (
+            <div className="receivable-note mt-2">
+              <span>Trong đó cho vay/chia: <strong>{formatCurrency(totalReceivable)} đ</strong></span>
+            </div>
+          )}
         </div>
 
         {totalDebt > 0 && (

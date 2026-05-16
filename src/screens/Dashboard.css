@@ -162,3 +162,18 @@
   font-weight: 600;
   color: var(--text-dark);
 }
+
+.receivable-note {
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-block;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 8px;
+}
+
+.receivable-note strong {
+  color: #fff;
+  font-weight: 700;
+}

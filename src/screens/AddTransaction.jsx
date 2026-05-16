@@ -21,6 +21,15 @@ const AddTransaction = ({ isEdit = false }) => {
   const [paidBy, setPaidBy] = useState('shared');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [title, setTitle] = useState('');
+
+  // Keyword to category mapping
+  const keywordMap = {
+    'ăn': '1', 'uống': '1', 'phở': '1', 'cơm': '1', 'cafe': '1', 'coffee': '1', 'bún': '1',
+    'nhà': '2', 'trọ': '2', 'điện': '3', 'nước': '3', 'internet': '3', 'wifi': '3', 'rác': '3',
+    'xăng': '4', 'grab': '4', 'be': '4', 'taxi': '4', 'xe': '4',
+    'vay': '5', 'mượn': '5', 'nợ': '5',
+    'áo': '6', 'quần': '6', 'giày': '6', 'shopee': '6', 'lazada': '6', 'tiki': '6'
+  };
   
   // Split bill states
   const [isSplit, setIsSplit] = useState(false);
@@ -268,7 +277,20 @@ const AddTransaction = ({ isEdit = false }) => {
             placeholder="Mô tả thêm..." 
             style={{resize: 'none'}}
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setTitle(val);
+              // Auto-detect category from keywords
+              if (!categoryId) {
+                const words = val.toLowerCase().split(' ');
+                for (const word of words) {
+                  if (keywordMap[word]) {
+                    handleCategoryChange(keywordMap[word]);
+                    break;
+                  }
+                }
+              }
+            }}
           ></textarea>
         </div>
 
