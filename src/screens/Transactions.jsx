@@ -43,9 +43,9 @@ const Transactions = () => {
   
   // Create a lookup map for categories with legacy support
   const categoriesMap = useMemo(() => {
-    const map = categories.reduce((acc, cat) => {
-      acc[cat.id.toString()] = cat;
-      acc[cat.label.toLowerCase()] = cat;
+    const map = (categories || []).reduce((acc, cat) => {
+      if (cat && cat.id) acc[cat.id.toString()] = cat;
+      if (cat && cat.label) acc[cat.label.toLowerCase()] = cat;
       return acc;
     }, {});
 
@@ -106,10 +106,7 @@ const Transactions = () => {
   const totalExpense = useMemo(() => {
     return filteredTransactions
       .filter(t => t.type === 'expense')
-      .reduce((acc, curr) => {
-        const splitAmount = curr.splits ? curr.splits.reduce((sum, s) => sum + s.amount, 0) : 0;
-        return acc + (curr.amount - splitAmount);
-      }, 0);
+      .reduce((acc, curr) => acc + (curr.amount || 0), 0);
   }, [filteredTransactions]);
 
   return (
@@ -258,7 +255,7 @@ const Transactions = () => {
                   {t.splits && t.splits.length > 0 ? (
                     <>
                       {formatCurrency(t.amount)} đ
-                      <span className="t-amount-total">Vợ chồng: {formatCurrency(t.amount - t.splits.reduce((sum, s) => sum + s.amount, 0))}</span>
+                      <span className="t-amount-total">Vợ chồng: {formatCurrency((t.amount || 0) - t.splits.reduce((sum, s) => sum + (s.amount || 0), 0))}</span>
                     </>
                   ) : (
                     <>{formatCurrency(t.amount)} đ</>
