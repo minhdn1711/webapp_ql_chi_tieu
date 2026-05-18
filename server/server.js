@@ -11,12 +11,22 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 app.get('/api/transactions', (req, res) => {
-  db.all('SELECT * FROM transactions ORDER BY date DESC, id DESC', [], (err, rows) => {
+  db.all('SELECT * FROM transactions ORDER BY date DESC, id DESC', [], (err, transactions) => {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
     }
-    res.json(rows);
+
+    // Lấy tất cả splits để map vào transactions
+    db.all('SELECT transaction_id, person_name as name, amount FROM splits', [], (err, splits) => {
+      if (err) return res.json(transactions); // Trả về transactions nếu lỗi split
+
+      const enriched = transactions.map(t => ({
+        ...t,
+        splits: splits.filter(s => s.transaction_id === t.id)
+      }));
+      res.json(enriched);
+    });
   });
 });
 
@@ -25,7 +35,7 @@ app.get('/api/transactions/:id', (req, res) => {
   const { id } = req.params;
   db.get('SELECT * FROM transactions WHERE id = ?', [id], (err, transaction) => {
     if (err || !transaction) return res.status(404).json({ error: 'Không tìm thấy giao dịch' });
-    
+
     db.all('SELECT person_name as name, amount FROM splits WHERE transaction_id = ?', [id], (err, splits) => {
       res.json({ ...transaction, splits: splits || [] });
     });
@@ -55,7 +65,7 @@ app.post('/api/categories', (req, res) => {
   const { label, color, type, icon } = req.body;
   if (!label || !color) return res.status(400).json({ error: 'Thiếu thông tin' });
   const sql = 'INSERT INTO categories (label, color, type, icon) VALUES (?, ?, ?, ?)';
-  db.run(sql, [label, color, type || 'expense', icon || '📦'], function(err) {
+  db.run(sql, [label, color, type || 'expense', icon || '📦'], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ id: this.lastID, label, color, type: type || 'expense', icon: icon || '📦' });
   });
@@ -65,7 +75,7 @@ app.put('/api/categories/:id', (req, res) => {
   const { id } = req.params;
   const { label, color, type, icon } = req.body;
   const sql = 'UPDATE categories SET label = ?, color = ?, type = ?, icon = ? WHERE id = ?';
-  db.run(sql, [label, color, type, icon, id], function(err) {
+  db.run(sql, [label, color, type, icon, id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ success: true });
   });
@@ -78,7 +88,7 @@ app.delete('/api/categories/:id', (req, res) => {
     if (row && row.count > 0) {
       return res.status(400).json({ error: 'Không thể xóa danh mục đang có giao dịch' });
     }
-    db.run('DELETE FROM categories WHERE id = ?', id, function(err) {
+    db.run('DELETE FROM categories WHERE id = ?', id, function (err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ success: true });
     });
@@ -105,7 +115,7 @@ app.get('/api/debts', (req, res) => {
 // API: Thêm giao dịch mới (có hỗ trợ chia tiền)
 app.post('/api/transactions', (req, res) => {
   const { date, title, amount, type, categoryId, by, splits } = req.body;
-  
+
   if (!date || !title || amount === undefined || !type || !categoryId || !by) {
     return res.status(400).json({ error: 'Thiếu thông tin bắt buộc' });
   }
@@ -114,12 +124,12 @@ app.post('/api/transactions', (req, res) => {
     const sql = 'INSERT INTO transactions (date, title, amount, type, categoryId, "by") VALUES (?, ?, ?, ?, ?, ?)';
     const params = [date, title, amount, type, categoryId, by];
 
-    db.run(sql, params, function(err) {
+    db.run(sql, params, function (err) {
       if (err) {
         console.error('Lỗi INSERT transaction:', err.message);
         return res.status(500).json({ error: err.message });
       }
-      
+
       const transactionId = this.lastID;
 
       // Nếu có thông tin chia tiền, thêm vào bảng splits
@@ -148,7 +158,7 @@ app.post('/api/goals', (req, res) => {
   if (!title || !target) return res.status(400).json({ error: 'Thiếu thông tin' });
 
   const sql = 'INSERT INTO goals (title, current, target, icon, color) VALUES (?, 0, ?, ?, ?)';
-  db.run(sql, [title, target, icon, color], function(err) {
+  db.run(sql, [title, target, icon, color], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ id: this.lastID, title, current: 0, target, icon, color });
   });
@@ -160,7 +170,7 @@ app.patch('/api/goals/:id/add-money', (req, res) => {
   const { id } = req.params;
   if (!amount) return res.status(400).json({ error: 'Thiếu số tiền' });
 
-  db.run('UPDATE goals SET current = current + ? WHERE id = ?', [amount, id], function(err) {
+  db.run('UPDATE goals SET current = current + ? WHERE id = ?', [amount, id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ success: true, changes: this.changes });
   });
@@ -179,7 +189,7 @@ app.patch('/api/splits/:id/pay', (req, res) => {
     FROM splits s 
     JOIN transactions t ON s.transaction_id = t.id 
     WHERE s.id = ?`, [id], (err, split) => {
-    
+
     if (err || !split) {
       console.error('Không tìm thấy split ID:', id);
       return res.status(404).json({ error: 'Không tìm thấy khoản nợ' });
@@ -191,7 +201,7 @@ app.patch('/api/splits/:id/pay', (req, res) => {
     const isPaid = newPaidAmount >= split.amount ? 1 : 0;
 
     // 1. Cập nhật bảng splits
-    db.run('UPDATE splits SET paid_amount = ?, is_paid = ? WHERE id = ?', [newPaidAmount, isPaid, id], function(err) {
+    db.run('UPDATE splits SET paid_amount = ?, is_paid = ? WHERE id = ?', [newPaidAmount, isPaid, id], function (err) {
       if (err) {
         console.error('Lỗi cập nhật splits:', err.message);
         return res.status(500).json({ error: 'Lỗi cập nhật khoản nợ' });
@@ -200,19 +210,19 @@ app.patch('/api/splits/:id/pay', (req, res) => {
       // 2. Tự động tạo một Khoản thu (Income) trong bảng transactions
       const incomeTitle = `Thu hồi nợ: ${split.person_name} - ${split.transaction_title}`;
       const today = new Date().toISOString().split('T')[0];
-      
+
       db.run(
         'INSERT INTO transactions (date, title, amount, type, categoryId, "by") VALUES (?, ?, ?, ?, ?, ?)',
         [today, incomeTitle, payAmt, 'income', 'other', 'me'],
-        function(err) {
+        function (err) {
           if (err) {
             console.error('Lỗi tạo transaction thu hồi nợ:', err.message);
             // Vẫn trả về thành công vì bước 1 đã xong
           }
-          
-          res.json({ 
-            success: true, 
-            isPaid, 
+
+          res.json({
+            success: true,
+            isPaid,
             newPaidAmount,
             message: 'Đã cập nhật thanh toán'
           });
@@ -226,11 +236,11 @@ app.patch('/api/splits/:id/pay', (req, res) => {
 app.put('/api/transactions/:id', (req, res) => {
   const { id } = req.params;
   const { date, title, amount, type, categoryId, by, splits } = req.body;
-  
+
   db.serialize(() => {
     // 1. Cập nhật thông tin chính
     const sql = 'UPDATE transactions SET date = ?, title = ?, amount = ?, type = ?, categoryId = ?, "by" = ? WHERE id = ?';
-    db.run(sql, [date, title, amount, type, categoryId, by, id], function(err) {
+    db.run(sql, [date, title, amount, type, categoryId, by, id], function (err) {
       if (err) return res.status(500).json({ error: err.message });
 
       // 2. Xóa các splits cũ
@@ -255,7 +265,7 @@ app.put('/api/transactions/:id', (req, res) => {
 // Xóa giao dịch
 app.delete('/api/transactions/:id', (req, res) => {
   const { id } = req.params;
-  db.run('DELETE FROM transactions WHERE id = ?', id, function(err) {
+  db.run('DELETE FROM transactions WHERE id = ?', id, function (err) {
     if (err) {
       res.status(500).json({ error: err.message });
       return;
@@ -271,7 +281,7 @@ app.put('/api/goals/:id', (req, res) => {
   const { id } = req.params;
   const { title, target, icon, color } = req.body;
   const sql = 'UPDATE goals SET title = ?, target = ?, icon = ?, color = ? WHERE id = ?';
-  db.run(sql, [title, target, icon, color, id], function(err) {
+  db.run(sql, [title, target, icon, color, id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ success: true, changes: this.changes });
   });
@@ -280,11 +290,8 @@ app.put('/api/goals/:id', (req, res) => {
 // Xóa quỹ tiết kiệm
 app.delete('/api/goals/:id', (req, res) => {
   const { id } = req.params;
-  db.run('DELETE FROM goals WHERE id = ?', id, function(err) {
+  db.run('DELETE FROM goals WHERE id = ?', id, function (err) {
     if (err) return res.status(500).json({ error: err.message });
-    res.json({ success: true, changes: this.changes });
-  });
-});
 
 // ================= SETTINGS & PROFILE API =================
 
@@ -333,6 +340,35 @@ app.put('/api/settings/profile', (req, res) => {
   });
 });
 
+// API: Lấy cài đặt hệ thống
+app.get('/api/settings', (req, res) => {
+  db.all('SELECT * FROM settings', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const settings = rows.reduce((acc, row) => {
+      acc[row.key] = row.value;
+      return acc;
+    }, {});
+    res.json(settings);
+  });
+});
+
+// API: Cập nhật cài đặt
+app.post('/api/settings', (req, res) => {
+  const settings = req.body; // { key: value }
+  const keys = Object.keys(settings);
+
+  db.serialize(() => {
+    const stmt = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
+    keys.forEach(key => {
+      stmt.run(key, settings[key].toString());
+    });
+    stmt.finalize((err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true });
+    });
+  });
+});
+
 // API: Thay đổi mật khẩu
 app.put('/api/settings/password', (req, res) => {
   const { currentPassword, newPassword } = req.body;
@@ -346,10 +382,21 @@ app.put('/api/settings/password', (req, res) => {
       return res.json({ success: false, error: 'Mật khẩu hiện tại không chính xác' });
     }
 
-    db.run("UPDATE settings SET value = ? WHERE key = 'password'", [newPassword], function(err) {
+    db.run("UPDATE settings SET value = ? WHERE key = 'password'", [newPassword], function (err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ success: true });
     });
+  });
+});
+
+// API: Xóa sạch dữ liệu hệ thống
+app.post('/api/system/reset', (req, res) => {
+  db.serialize(() => {
+    db.run('DELETE FROM transactions');
+    db.run('DELETE FROM splits');
+    db.run('DELETE FROM goals');
+    // Giữ lại categories và settings
+    res.json({ success: true });
   });
 });
 

@@ -21,11 +21,25 @@ const AddTransaction = ({ isEdit = false }) => {
   const [paidBy, setPaidBy] = useState('shared');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [title, setTitle] = useState('');
+
+  // Keyword to category mapping
+  const keywordMap = {
+    'ăn': '1', 'uống': '1', 'phở': '1', 'cơm': '1', 'cafe': '1', 'coffee': '1', 'bún': '1',
+    'nhà': '2', 'trọ': '2', 'điện': '3', 'nước': '3', 'internet': '3', 'wifi': '3', 'rác': '3',
+    'xăng': '4', 'grab': '4', 'be': '4', 'taxi': '4', 'xe': '4',
+    'vay': '5', 'mượn': '5', 'nợ': '5',
+    'áo': '6', 'quần': '6', 'giày': '6', 'shopee': '6', 'lazada': '6', 'tiki': '6'
+  };
   
   // Split bill states
   const [isSplit, setIsSplit] = useState(false);
   const [splitPeople, setSplitPeople] = useState([]);
   const [newPersonName, setNewPersonName] = useState('');
+  
+  // Participants to include in equal split
+  const [includeMe, setIncludeMe] = useState(true);
+  const [includeWife, setIncludeWife] = useState(false);
+  const [includeHusband, setIncludeHusband] = useState(false);
   
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(isEdit);
@@ -58,6 +72,19 @@ const AddTransaction = ({ isEdit = false }) => {
     }
   }, [isEdit, id, navigate, addToast]);
 
+  // Handle category change with auto-detection for loans
+  const handleCategoryChange = (val) => {
+    if (val === null || val === undefined) return;
+    setCategoryId(val);
+    const selectedCat = (categories || []).find(c => c.id && c.id.toString() === val.toString());
+    if (selectedCat && selectedCat.label === 'Cho vay') {
+      setIsSplit(true);
+      setIncludeMe(false);
+      setIncludeWife(false);
+      setIncludeHusband(false);
+    }
+  };
+
   const addPerson = () => {
     if (newPersonName.trim()) {
       setSplitPeople([...splitPeople, { name: newPersonName.trim(), amount: '' }]);
@@ -77,8 +104,12 @@ const AddTransaction = ({ isEdit = false }) => {
 
   const autoSplit = () => {
     const rawAmt = getRawAmount(amount);
-    if (!rawAmt || splitPeople.length === 0) return;
-    const splitAmount = Math.floor(rawAmt / (splitPeople.length + 1));
+    if (!rawAmt) return;
+    
+    const participantsCount = (includeMe ? 1 : 0) + (includeWife ? 1 : 0) + (includeHusband ? 1 : 0) + splitPeople.length;
+    if (participantsCount === 0) return;
+
+    const splitAmount = Math.floor(rawAmt / participantsCount);
     const newPeople = splitPeople.map(p => ({ ...p, amount: formatInput(splitAmount) }));
     setSplitPeople(newPeople);
   };
@@ -96,8 +127,8 @@ const AddTransaction = ({ isEdit = false }) => {
 
     if (isSplit) {
       const totalSplit = splitPeople.reduce((sum, p) => sum + getRawAmount(p.amount), 0);
-      if (totalSplit >= rawAmount) {
-        setError('Tổng số tiền chia sẻ cho người khác phải nhỏ hơn tổng số tiền chi.');
+      if (totalSplit > rawAmount) {
+        setError('Tổng số tiền chia sẻ cho người khác không được lớn hơn tổng số tiền chi.');
         return;
       }
     }
@@ -110,8 +141,9 @@ const AddTransaction = ({ isEdit = false }) => {
     // Default title if not provided
     let finalTitle = title.trim();
     if (!finalTitle) {
-      const selectEl = e.target.querySelector('select');
-      finalTitle = selectEl.options[selectEl.selectedIndex].text;
+      const catIdStr = categoryId !== null && categoryId !== undefined ? categoryId.toString() : '';
+      const selectedCat = (categories || []).find(c => c.id && c.id.toString() === catIdStr);
+      finalTitle = selectedCat ? selectedCat.label : 'Giao dịch';
     }
 
     const newTransaction = {
@@ -202,7 +234,7 @@ const AddTransaction = ({ isEdit = false }) => {
           <select 
             className="form-select" 
             value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
+            onChange={(e) => handleCategoryChange(e.target.value)}
           >
             <option value="" disabled>Chọn danh mục...</option>
             {categories.filter(c => c.type === type).map(cat => (
@@ -247,7 +279,20 @@ const AddTransaction = ({ isEdit = false }) => {
             placeholder="Mô tả thêm..." 
             style={{resize: 'none'}}
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setTitle(val);
+              // Auto-detect category from keywords
+              if (!categoryId) {
+                const words = val.toLowerCase().split(' ');
+                for (const word of words) {
+                  if (keywordMap[word]) {
+                    handleCategoryChange(keywordMap[word]);
+                    break;
+                  }
+                }
+              }
+            }}
           ></textarea>
         </div>
 
@@ -274,6 +319,24 @@ const AddTransaction = ({ isEdit = false }) => {
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addPerson())}
                   />
                   <button type="button" onClick={addPerson} className="btn-add-person">Thêm</button>
+                </div>
+
+                <div className="participants-selector mb-4">
+                  <p className="text-muted mb-2" style={{fontSize: '13px'}}>Bao gồm trong chia đều:</p>
+                  <div className="flex-row gap-2">
+                    <label className={`participant-chip ${includeMe ? 'active' : ''}`}>
+                      <input type="checkbox" checked={includeMe} onChange={() => setIncludeMe(!includeMe)} />
+                      Tôi
+                    </label>
+                    <label className={`participant-chip ${includeWife ? 'active' : ''}`}>
+                      <input type="checkbox" checked={includeWife} onChange={() => setIncludeWife(!includeWife)} />
+                      Vợ
+                    </label>
+                    <label className={`participant-chip ${includeHusband ? 'active' : ''}`}>
+                      <input type="checkbox" checked={includeHusband} onChange={() => setIncludeHusband(!includeHusband)} />
+                      Chồng
+                    </label>
+                  </div>
                 </div>
 
                 {splitPeople.length > 0 && (

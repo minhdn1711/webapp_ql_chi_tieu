@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Plus, ArrowDownCircle, ArrowUpCircle, TrendingUp, ChevronRight } from 'lucide-react';
-import { formatCurrency } from '../utils/format';
+import { formatCurrency, formatInput, getRawAmount } from '../utils/format';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../context/CategoryContext';
 import './Dashboard.css';
@@ -11,19 +11,77 @@ const Dashboard = () => {
   const { categories } = useCategories();
   const [goals, setGoals] = useState([]);
   const [debts, setDebts] = useState([]);
+  const [settings, setSettings] = useState({ initial_balance: '0', gold_amount: '0' });
+  const [isEditingAssets, setIsEditingAssets] = useState(false);
+  const [tempSettings, setTempSettings] = useState({ initial_balance: '', gold_amount: '' });
 
-  // Create a lookup map for categories
+  // Create a lookup map for categories with legacy support
   const categoriesMap = useMemo(() => {
-    return categories.reduce((acc, cat) => {
-      acc[cat.id] = cat;
+    const map = (categories || []).reduce((acc, cat) => {
+      if (cat && cat.id) acc[cat.id.toString()] = cat;
+      if (cat && cat.label) {
+        acc[cat.label.toLowerCase()] = cat;
+        // Also map by direct label for some legacy cases
+        acc[cat.label] = cat;
+      }
       return acc;
     }, {});
+
+    // Legacy mapping for hardcoded string IDs
+    const legacy = {
+      'food': { label: 'Ăn uống', color: 'var(--accent-pink)', icon: '🍔' },
+      'rent': { label: 'Tiền nhà', color: '#6d9177', icon: '🏠' },
+      'utilities': { label: 'Điện nước', color: '#E0A96D', icon: '⚡' },
+      'transport': { label: 'Di chuyển', color: '#9B9B9B', icon: '🚗' },
+      'shopping': { label: 'Mua sắm', color: 'var(--primary-green)', icon: '🛍️' },
+      'salary': { label: 'Lương', color: 'var(--primary-green)', icon: '💰' },
+      'bonus': { label: 'Thưởng', color: '#E0A96D', icon: '🎁' }
+    };
+
+    return { ...legacy, ...map };
   }, [categories]);
 
   useEffect(() => {
-    fetch('/api/goals').then(res => res.json()).then(setGoals);
-    fetch('/api/debts').then(res => res.json()).then(setDebts);
+    fetch('/api/goals').then(res => res.json()).then(setGoals).catch(() => setGoals([]));
+    fetch('/api/debts').then(res => res.json()).then(setDebts).catch(() => setDebts([]));
+    fetch('/api/settings').then(res => res.json()).then(data => {
+      setSettings(data);
+      // Format the initial_balance for the input field
+      setTempSettings({
+        ...data,
+        initial_balance: formatInput(data.initial_balance)
+      });
+    }).catch(() => {});
   }, []);
+
+  const saveSettings = async () => {
+    // Convert tempSettings back to raw numbers before saving
+    const toSave = {
+      ...tempSettings,
+      initial_balance: getRawAmount(tempSettings.initial_balance).toString()
+    };
+    
+    const res = await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(toSave)
+    });
+    if (res.ok) {
+      setSettings(toSave);
+      setIsEditingAssets(false);
+    }
+  };
+
+  const clearAllData = async () => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử giao dịch và quỹ tiết kiệm? Hành động này không thể hoàn tác.')) {
+      // We'll need to add a server endpoint for this, or just delete everything via existing APIs if possible
+      // For now, let's assume we add a /api/system/reset endpoint
+      const res = await fetch('/api/system/reset', { method: 'POST' });
+      if (res.ok) {
+        window.location.reload();
+      }
+    }
+  };
 
   // Calculate for current month dynamically
   const currentMonth = useMemo(() => {
@@ -31,19 +89,43 @@ const Dashboard = () => {
   }, []);
 
   const currentMonthTransactions = useMemo(() => {
-    return transactions.filter(t => t.date.startsWith(currentMonth));
+    return (transactions || []).filter(t => t && t.date && t.date.startsWith(currentMonth));
   }, [transactions, currentMonth]);
 
   const totalIncome = useMemo(() => {
     return currentMonthTransactions
       .filter(t => t.type === 'income')
-      .reduce((acc, curr) => acc + curr.amount, 0);
+      .reduce((acc, curr) => acc + (curr.amount || 0), 0);
   }, [currentMonthTransactions]);
 
   const totalExpense = useMemo(() => {
     return currentMonthTransactions
       .filter(t => t.type === 'expense')
-      .reduce((acc, curr) => acc + curr.amount, 0);
+      .reduce((acc, curr) => acc + (curr.amount || 0), 0);
+  }, [currentMonthTransactions]);
+
+  // Total history net for overall balance
+  const totalHistoryNet = useMemo(() => {
+    return (transactions || []).reduce((acc, curr) => {
+      if (!curr) return acc;
+      const amt = parseInt(curr.amount, 10) || 0;
+      return curr.type === 'income' ? acc + amt : acc - amt;
+    }, 0);
+  }, [transactions]);
+
+  const totalSaved = useMemo(() => {
+    return (goals || []).reduce((acc, g) => acc + Number(g.current || 0), 0);
+  }, [goals]);
+
+  const actualBalance = getRawAmount(settings.initial_balance) + totalIncome - totalExpense - totalSaved;
+
+  const totalReceivable = useMemo(() => {
+    return currentMonthTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((acc, curr) => {
+        const splitAmount = curr.splits ? curr.splits.reduce((sum, s) => sum + (s.amount || 0), 0) : 0;
+        return acc + splitAmount;
+      }, 0);
   }, [currentMonthTransactions]);
 
   const remainingBalance = totalIncome - totalExpense;
@@ -52,7 +134,14 @@ const Dashboard = () => {
   const categorySpending = useMemo(() => {
     const expenses = currentMonthTransactions.filter(t => t.type === 'expense');
     const grouped = expenses.reduce((acc, curr) => {
-      acc[curr.categoryId] = (acc[curr.categoryId] || 0) + curr.amount;
+      let catId = 'other';
+      if (curr.categoryId) {
+        catId = curr.categoryId.toString();
+      } else if (curr.category) {
+        // Fallback for some very old data that might have 'category' field
+        catId = curr.category.toString();
+      }
+      acc[catId] = (acc[catId] || 0) + (curr.amount || 0);
       return acc;
     }, {});
 
@@ -60,14 +149,16 @@ const Dashboard = () => {
       .map(([id, amount]) => ({
         id,
         amount,
-        ...(categoriesMap[id] || { label: 'Khác', color: 'var(--text-muted)' })
+        ...(categoriesMap[id] || 
+            categoriesMap[id.toLowerCase()] || 
+            { label: 'Khác', color: 'var(--text-muted)' })
       }))
       .sort((a, b) => b.amount - a.amount);
 
-    if (sorted.length <= 4) return sorted;
-    const top3 = sorted.slice(0, 3);
-    const othersAmount = sorted.slice(3).reduce((acc, curr) => acc + curr.amount, 0);
-    return [...top3, { id: 'other', label: 'Khác', color: 'var(--text-muted)', amount: othersAmount }];
+    if (sorted.length <= 7) return sorted;
+    const top6 = sorted.slice(0, 6);
+    const othersAmount = sorted.slice(6).reduce((acc, curr) => acc + (curr.amount || 0), 0);
+    return [...top6, { id: 'other', label: 'Khác', color: 'var(--text-muted)', amount: othersAmount }];
   }, [currentMonthTransactions, categoriesMap]);
 
   // Calculate spending by payer
@@ -101,8 +192,29 @@ const Dashboard = () => {
       {/* Summary Cards */}
       <div className="summary-cards">
         <div className="card balance-card">
-          <p className="form-label text-white-muted">Số dư còn lại</p>
-          <h2 className="balance-amount">{formatCurrency(remainingBalance)} đ</h2>
+          <p className="form-label text-white-muted">Số dư thực tế</p>
+          <h2 className="balance-amount">{formatCurrency(actualBalance)} đ</h2>
+          <p className="text-white-muted" style={{fontSize: '11px', marginTop: '4px', opacity: 0.9}}>
+            (Dựa trên tiền ban đầu và toàn bộ lịch sử)
+          </p>
+          <div className="balance-breakdown mt-4">
+            <div className="breakdown-item">
+              <span>Tiền ban đầu</span>
+              <span>{formatCurrency(getRawAmount(settings.initial_balance))}</span>
+            </div>
+            <div className="breakdown-item">
+              <span>Thu nhập tháng này (+)</span>
+              <span>{formatCurrency(totalIncome)}</span>
+            </div>
+            <div className="breakdown-item">
+              <span>Chi tiêu tháng này (-)</span>
+              <span>{formatCurrency(totalExpense)}</span>
+            </div>
+            <div className="breakdown-item">
+              <span>Tiết kiệm (Đang có)</span>
+              <span>{formatCurrency(totalSaved)}</span>
+            </div>
+          </div>
           <div className="flex-between mt-4">
             <div className="income-expense">
               <ArrowDownCircle size={16} color="#F2C4C4" />
@@ -113,6 +225,11 @@ const Dashboard = () => {
               <span>Chi: {(totalExpense / 1000000).toFixed(1)}Tr</span>
             </div>
           </div>
+          {totalReceivable > 0 && (
+            <div className="receivable-note mt-2">
+              <span>Trong đó cho vay/chia: <strong>{formatCurrency(totalReceivable)} đ</strong></span>
+            </div>
+          )}
         </div>
 
         {totalDebt > 0 && (
@@ -123,6 +240,65 @@ const Dashboard = () => {
             </div>
             <ChevronRight size={20} color="var(--primary-green)" />
           </NavLink>
+        )}
+      </div>
+
+      {/* Asset Management Card */}
+      <div className="card mb-6 asset-card">
+        <div className="flex-between mb-4">
+          <h3 style={{fontSize: '16px'}}>Tài sản & Cài đặt</h3>
+          {!isEditingAssets ? (
+            <button className="text-link" onClick={() => setIsEditingAssets(true)}>Sửa</button>
+          ) : (
+            <div className="flex-row gap-2">
+              <button className="text-link" onClick={() => setIsEditingAssets(false)}>Hủy</button>
+              <button className="text-link font-bold" onClick={saveSettings}>Lưu</button>
+            </div>
+          )}
+        </div>
+        
+        <div className="asset-grid">
+          <div className="asset-item">
+            <span className="asset-label">Tiền ban đầu:</span>
+            {isEditingAssets ? (
+              <input 
+                type="text" 
+                className="asset-input"
+                value={tempSettings.initial_balance}
+                onChange={e => setTempSettings({...tempSettings, initial_balance: formatInput(e.target.value)})}
+              />
+            ) : (
+              <span className="asset-value">{formatCurrency(getRawAmount(settings.initial_balance))} đ</span>
+            )}
+          </div>
+          <div className="asset-item">
+            <span className="asset-label">Vàng đang có:</span>
+            {isEditingAssets ? (
+              <input 
+                type="text" 
+                className="asset-input"
+                placeholder="VD: 5 chỉ, 2 cây..."
+                value={tempSettings.gold_amount}
+                onChange={e => setTempSettings({...tempSettings, gold_amount: e.target.value})}
+              />
+            ) : (
+              <span className="asset-value" style={{color: '#E0A96D', fontWeight: '700'}}>
+                {settings.gold_amount || '0'}
+              </span>
+            )}
+          </div>
+        </div>
+        
+        {isEditingAssets && (
+          <div className="mt-4 pt-4 border-top">
+            <button 
+              className="btn-outline-danger w-full" 
+              onClick={clearAllData}
+              style={{color: '#dc3545', border: '1px solid #dc3545', padding: '8px', borderRadius: '8px', width: '100%', background: 'transparent'}}
+            >
+              Xóa sạch lịch sử giao dịch & Quỹ
+            </button>
+          </div>
         )}
       </div>
 

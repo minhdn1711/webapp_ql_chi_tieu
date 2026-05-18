@@ -41,12 +41,28 @@ const Transactions = () => {
   const { categories } = useCategories();
   const { addToast } = useToast();
   
-  // Create a lookup map for categories
+  // Create a lookup map for categories with legacy support
   const categoriesMap = useMemo(() => {
-    return categories.reduce((acc, cat) => {
-      acc[cat.id] = cat;
+    const map = (categories || []).reduce((acc, cat) => {
+      if (cat && cat.id) acc[cat.id.toString()] = cat;
+      if (cat && cat.label) {
+        acc[cat.label.toLowerCase()] = cat;
+        acc[cat.label] = cat;
+      }
       return acc;
     }, {});
+
+    const legacy = {
+      'food': { label: 'Ăn uống', color: 'var(--accent-pink)', icon: '🍔' },
+      'rent': { label: 'Tiền nhà', color: '#6d9177', icon: '🏠' },
+      'utilities': { label: 'Điện nước', color: '#E0A96D', icon: '⚡' },
+      'transport': { label: 'Di chuyển', color: '#9B9B9B', icon: '🚗' },
+      'shopping': { label: 'Mua sắm', color: 'var(--primary-green)', icon: '🛍️' },
+      'salary': { label: 'Lương', color: 'var(--primary-green)', icon: '💰' },
+      'bonus': { label: 'Thưởng', color: '#E0A96D', icon: '🎁' }
+    };
+
+    return { ...legacy, ...map };
   }, [categories]);
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7));
@@ -93,7 +109,7 @@ const Transactions = () => {
   const totalExpense = useMemo(() => {
     return filteredTransactions
       .filter(t => t.type === 'expense')
-      .reduce((acc, curr) => acc + curr.amount, 0);
+      .reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
   }, [filteredTransactions]);
 
   return (
@@ -211,7 +227,10 @@ const Transactions = () => {
 
         {filteredTransactions.map((t, index) => {
           const showDate = index === 0 || filteredTransactions[index - 1].date !== t.date;
-          const category = categoriesMap[t.categoryId] || { label: 'Khác', color: 'var(--text-muted)' };
+          const categoryIdStr = (t && t.categoryId) ? t.categoryId.toString() : 'other';
+          const category = categoriesMap[categoryIdStr] || 
+                           categoriesMap[categoryIdStr.toLowerCase()] ||
+                           { label: 'Khác', color: 'var(--text-muted)', icon: '📦' };
           
           return (
             <React.Fragment key={t.id}>
@@ -228,10 +247,24 @@ const Transactions = () => {
                     <span>{category.label}</span>
                     <span className="dot">•</span>
                     <span>{getByName(t.by)}</span>
+                    {t.splits && t.splits.length > 0 && (
+                      <>
+                        <span className="dot">•</span>
+                        <span className="split-badge">Chia tiền</span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className={`t-amount ${t.type}`}>
-                  {t.type === 'income' ? '+' : '-'}{formatCurrency(t.amount)} đ
+                  {t.type === 'income' ? '+' : '-'}
+                  {t.splits && t.splits.length > 0 ? (
+                    <>
+                      {formatCurrency(t.amount)} đ
+                      <span className="t-amount-total">Vợ chồng: {formatCurrency((t.amount || 0) - t.splits.reduce((sum, s) => sum + (s.amount || 0), 0))}</span>
+                    </>
+                  ) : (
+                    <>{formatCurrency(t.amount)} đ</>
+                  )}
                 </div>
                 <div className="t-actions">
                   <Link 

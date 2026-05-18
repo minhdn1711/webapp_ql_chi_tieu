@@ -48,6 +48,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
               ['Tiền nhà', '#6d9177', 'expense', '🏠'],
               ['Điện nước', '#E0A96D', 'expense', '⚡'],
               ['Di chuyển', '#9B9B9B', 'expense', '🚗'],
+              ['Cho vay', '#3B82F6', 'expense', '🤝'],
               ['Mua sắm', 'var(--primary-green)', 'expense', '🛍️'],
               ['Lương', 'var(--primary-green)', 'income', '💰'],
               ['Thưởng', '#E0A96D', 'income', '🎁'],
@@ -71,6 +72,24 @@ const db = new sqlite3.Database(dbPath, (err) => {
           color TEXT
         )
       `);
+
+      // Bảng cài đặt hệ thống (Số tiền ban đầu, Vàng...)
+      db.run(`
+        CREATE TABLE IF NOT EXISTS settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        )
+      `, () => {
+        // Seed default settings
+        db.get("SELECT COUNT(*) AS count FROM settings", (err, row) => {
+          if (row && row.count === 0) {
+            const stmt = db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)");
+            stmt.run(['initial_balance', '0']);
+            stmt.run(['gold_amount', '0']);
+            stmt.finalize();
+          }
+        });
+      });
 
       // Bảng chia tiền (Split bill)
       db.run(`
