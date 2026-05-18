@@ -123,13 +123,16 @@ const db = new sqlite3.Database(dbPath, (err) => {
           value TEXT NOT NULL
         )
       `, () => {
-        db.get("SELECT COUNT(*) AS count FROM settings", (err, row) => {
+        // Kiểm tra xem đã có cấu hình mật khẩu (password) trong bảng cài đặt chưa
+        db.get("SELECT COUNT(*) AS count FROM settings WHERE key = 'password'", (err, row) => {
           if (row && row.count === 0) {
-            const stmt = db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)");
+            // Nếu chưa có mật khẩu, tiến hành thêm mật mã mặc định và thông tin hồ sơ mặc định
+            const stmt = db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)");
             stmt.run(['password', '260426']);
             stmt.run(['avatar', 'https://api.dicebear.com/7.x/adventurer/svg?seed=Felix']);
             stmt.run(['username', 'Gia Đình Nhỏ']);
             stmt.finalize();
+            console.log('Đã khởi tạo mật mã và hồ sơ mặc định.');
           } else {
             // Tự động chuyển đổi mật khẩu mặc định cũ 26042026 sang mật khẩu mặc định mới 260426
             db.run("UPDATE settings SET value = '260426' WHERE key = 'password' AND value = '26042026'");
