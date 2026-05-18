@@ -97,6 +97,24 @@ const db = new sqlite3.Database(dbPath, (err) => {
         });
       });
 
+      // Bảng cài đặt (settings) lưu cấu hình mật khẩu, avatar, tên hiển thị
+      db.run(`
+        CREATE TABLE IF NOT EXISTS settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        )
+      `, () => {
+        db.get("SELECT COUNT(*) AS count FROM settings", (err, row) => {
+          if (row && row.count === 0) {
+            const stmt = db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)");
+            stmt.run(['password', '26042026']);
+            stmt.run(['avatar', 'https://api.dicebear.com/7.x/adventurer/svg?seed=Felix']);
+            stmt.run(['username', 'Gia Đình Nhỏ']);
+            stmt.finalize();
+          }
+        });
+      });
+
       /*
       // Kiểm tra xem database có trống không, nếu trống thì insert dữ liệu mẫu
       db.get("SELECT COUNT(*) AS count FROM transactions", (err, row) => {

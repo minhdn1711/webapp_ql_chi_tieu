@@ -7,7 +7,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 app.get('/api/transactions', (req, res) => {
   db.all('SELECT * FROM transactions ORDER BY date DESC, id DESC', [], (err, rows) => {
@@ -282,6 +283,73 @@ app.delete('/api/goals/:id', (req, res) => {
   db.run('DELETE FROM goals WHERE id = ?', id, function(err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ success: true, changes: this.changes });
+  });
+});
+
+// ================= SETTINGS & PROFILE API =================
+
+// API: Kiểm tra mật khẩu mở khóa
+app.post('/api/settings/verify', (req, res) => {
+  const { password } = req.body;
+  if (!password) return res.status(400).json({ error: 'Thiếu mật khẩu' });
+  db.get("SELECT value FROM settings WHERE key = 'password'", [], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: 'Không tìm thấy cấu hình mật khẩu' });
+    if (row.value === password) {
+      res.json({ success: true });
+    } else {
+      res.json({ success: false, error: 'Mật khẩu không chính xác' });
+    }
+  });
+});
+
+// API: Lấy thông tin Profile (Username & Avatar)
+app.get('/api/settings/profile', (req, res) => {
+  db.all("SELECT key, value FROM settings WHERE key IN ('username', 'avatar')", [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const profile = {};
+    rows.forEach(row => {
+      profile[row.key] = row.value;
+    });
+    res.json(profile);
+  });
+});
+
+// API: Cập nhật Profile (Username & Avatar)
+app.put('/api/settings/profile', (req, res) => {
+  const { username, avatar } = req.body;
+  db.serialize(() => {
+    const stmt = db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)");
+    if (username !== undefined) {
+      stmt.run('username', username);
+    }
+    if (avatar !== undefined) {
+      stmt.run('avatar', avatar);
+    }
+    stmt.finalize((err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true });
+    });
+  });
+});
+
+// API: Thay đổi mật khẩu
+app.put('/api/settings/password', (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Thiếu thông tin mật khẩu' });
+
+  db.get("SELECT value FROM settings WHERE key = 'password'", [], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: 'Không tìm thấy cấu hình mật khẩu' });
+    
+    if (row.value !== currentPassword) {
+      return res.json({ success: false, error: 'Mật khẩu hiện tại không chính xác' });
+    }
+
+    db.run("UPDATE settings SET value = ? WHERE key = 'password'", [newPassword], function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true });
+    });
   });
 });
 
