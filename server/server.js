@@ -292,6 +292,9 @@ app.delete('/api/goals/:id', (req, res) => {
   const { id } = req.params;
   db.run('DELETE FROM goals WHERE id = ?', id, function (err) {
     if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true, changes: this.changes });
+  });
+});
 
 // ================= SETTINGS & PROFILE API =================
 
