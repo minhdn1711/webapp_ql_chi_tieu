@@ -26,7 +26,14 @@ const LockScreen = ({ onUnlock }) => {
 
   const handleKeyPress = (char) => {
     if (error) setError(false);
-    setPassword(prev => prev + char);
+    setPassword(prev => {
+      if (prev.length >= 6) return prev;
+      const nextVal = prev + char;
+      if (nextVal.length === 6) {
+        setTimeout(() => handleSubmit(null, nextVal), 150);
+      }
+      return nextVal;
+    });
   };
 
   const handleBackspace = () => {
@@ -39,9 +46,10 @@ const LockScreen = ({ onUnlock }) => {
     setPassword('');
   };
 
-  const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
-    if (!password || loading) return;
+  const handleSubmit = async (e, customPassword) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const pinToSubmit = customPassword !== undefined ? customPassword : password;
+    if (!pinToSubmit || loading) return;
 
     setLoading(true);
     setError(false);
@@ -50,7 +58,7 @@ const LockScreen = ({ onUnlock }) => {
       const response = await fetch('/api/settings/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ password: pinToSubmit })
       });
       const data = await response.json();
 
@@ -80,7 +88,7 @@ const LockScreen = ({ onUnlock }) => {
         handleBackspace();
       } else if (e.key === 'Escape') {
         handleClear();
-      } else if (/^[a-zA-Z0-9]$/.test(e.key)) {
+      } else if (/^[0-9]$/.test(e.key)) {
         handleKeyPress(e.key);
       }
     };
@@ -123,7 +131,7 @@ const LockScreen = ({ onUnlock }) => {
             />
           ) : (
             <div className="lock-dots">
-              {Array.from({ length: Math.max(password.length, 4) }).map((_, i) => (
+              {Array.from({ length: 6 }).map((_, i) => (
                 <div 
                   key={i} 
                   className={`lock-dot ${i < password.length ? 'filled' : ''} ${error ? 'error' : ''}`}

@@ -126,10 +126,13 @@ const db = new sqlite3.Database(dbPath, (err) => {
         db.get("SELECT COUNT(*) AS count FROM settings", (err, row) => {
           if (row && row.count === 0) {
             const stmt = db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)");
-            stmt.run(['password', '26042026']);
+            stmt.run(['password', '260426']);
             stmt.run(['avatar', 'https://api.dicebear.com/7.x/adventurer/svg?seed=Felix']);
             stmt.run(['username', 'Gia Đình Nhỏ']);
             stmt.finalize();
+          } else {
+            // Tự động chuyển đổi mật khẩu mặc định cũ 26042026 sang mật khẩu mặc định mới 260426
+            db.run("UPDATE settings SET value = '260426' WHERE key = 'password' AND value = '26042026'");
           }
         });
       });
