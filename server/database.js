@@ -73,6 +73,18 @@ const db = new sqlite3.Database(dbPath, (err) => {
         )
       `);
 
+      // Bảng hạng mục chi tiêu trong quỹ
+      db.run(`
+        CREATE TABLE IF NOT EXISTS goal_notes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          goal_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          amount INTEGER NOT NULL DEFAULT 0,
+          date TEXT NOT NULL,
+          FOREIGN KEY(goal_id) REFERENCES goals(id) ON DELETE CASCADE
+        )
+      `);
+
       // Bảng cài đặt hệ thống (Số tiền ban đầu, Vàng...)
       db.run(`
         CREATE TABLE IF NOT EXISTS settings (

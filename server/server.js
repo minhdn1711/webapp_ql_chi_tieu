@@ -176,6 +176,55 @@ app.patch('/api/goals/:id/add-money', (req, res) => {
   });
 });
 
+// API: Lấy danh sách hạng mục trong quỹ
+app.get('/api/goals/:id/notes', (req, res) => {
+  const { id } = req.params;
+  db.all('SELECT * FROM goal_notes WHERE goal_id = ? ORDER BY date DESC, id DESC', [id], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+// API: Thêm hạng mục vào quỹ (trừ tiền quỹ)
+app.post('/api/goals/:id/notes', (req, res) => {
+  const { id } = req.params;
+  const { title, amount, date } = req.body;
+  if (!title || !amount || !date) return res.status(400).json({ error: 'Thiếu thông tin' });
+
+  db.get('SELECT current FROM goals WHERE id = ?', [id], (err, goal) => {
+    if (err || !goal) return res.status(404).json({ error: 'Không tìm thấy quỹ' });
+
+    db.run('INSERT INTO goal_notes (goal_id, title, amount, date) VALUES (?, ?, ?, ?)',
+      [id, title, amount, date], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+
+        db.run('UPDATE goals SET current = current - ? WHERE id = ?', [amount, id], function (err) {
+          if (err) return res.status(500).json({ error: err.message });
+          res.json({ id: this.lastID, goal_id: id, title, amount, date });
+        });
+      }
+    );
+  });
+});
+
+// API: Xóa hạng mục khỏi quỹ (hoàn tiền lại quỹ)
+app.delete('/api/goals/:id/notes/:noteId', (req, res) => {
+  const { id, noteId } = req.params;
+
+  db.get('SELECT * FROM goal_notes WHERE id = ? AND goal_id = ?', [noteId, id], (err, note) => {
+    if (err || !note) return res.status(404).json({ error: 'Không tìm thấy hạng mục' });
+
+    db.run('DELETE FROM goal_notes WHERE id = ?', [noteId], function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+
+      db.run('UPDATE goals SET current = current + ? WHERE id = ?', [note.amount, id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+      });
+    });
+  });
+});
+
 // API: Trả nợ (Hỗ trợ trả một phần)
 app.patch('/api/splits/:id/pay', (req, res) => {
   const { id } = req.params;
