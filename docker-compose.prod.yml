@@ -10,8 +10,10 @@ services:
       - ./data:/app/data
     env_file:
       - .env
+    expose:
+      - "3000"
     networks:
-      - webdongho_webdongho-network
+      - miliwebseo_shared
     deploy:
       resources:
         limits:
@@ -30,8 +32,10 @@ services:
       - backend
     env_file:
       - .env
+    expose:
+      - "80"
     networks:
-      - webdongho_webdongho-network
+      - miliwebseo_shared
     deploy:
       resources:
         limits:
@@ -41,5 +45,5 @@ services:
     restart: always
 
 networks:
-  webdongho_webdongho-network:
+  miliwebseo_shared:
     external: true
