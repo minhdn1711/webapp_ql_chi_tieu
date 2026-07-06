@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Filter, ShoppingBag, Utensils, Zap, Coffee, PiggyBank, Home as HomeIcon, CreditCard, Banknote, Trash2, Edit2, Search, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { formatCurrency } from '../utils/format';
+import { formatCurrency, getCurrentMonth } from '../utils/format';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../context/CategoryContext';
 import { useToast } from '../context/ToastContext';
@@ -65,7 +65,16 @@ const Transactions = () => {
     return { ...legacy, ...map };
   }, [categories]);
 
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7));
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
+
+  // Build month options dynamically from transaction data + current month
+  const monthOptions = useMemo(() => {
+    const months = new Set([getCurrentMonth()]);
+    (transactions || []).forEach(t => {
+      if (t && t.date && t.date.length >= 7) months.add(t.date.substring(0, 7));
+    });
+    return [...months].sort((a, b) => b.localeCompare(a));
+  }, [transactions]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   
@@ -148,8 +157,10 @@ const Transactions = () => {
             }}
           >
             <option value="all">Tất cả thời gian</option>
-            <option value="2026-05">Tháng 5, 2026</option>
-            <option value="2026-04">Tháng 4, 2026</option>
+            {monthOptions.map(m => {
+              const [y, mo] = m.split('-');
+              return <option key={m} value={m}>Tháng {parseInt(mo, 10)}, {y}</option>;
+            })}
           </select>
         </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, X, Trash2, ChevronDown, ChevronUp, FileText } from 'lucide-react';
-import { formatCurrency, formatInput, getRawAmount } from '../utils/format';
+import { formatCurrency, formatInput, getRawAmount, getToday } from '../utils/format';
 import { useToast } from '../context/ToastContext';
 import ConfirmModal from '../components/ConfirmModal';
 import './SavingGoals.css';
@@ -29,7 +29,7 @@ const SavingGoals = () => {
 
   const [newGoal, setNewGoal] = useState({ title: '', target: '', icon: '💰', color: '#10B981' });
   const [topUpAmount, setTopUpAmount] = useState('');
-  const [newNote, setNewNote] = useState({ title: '', amount: '', date: new Date().toISOString().slice(0, 10) });
+  const [newNote, setNewNote] = useState({ title: '', amount: '', date: getToday() });
 
   const fetchGoals = async () => {
     try {
@@ -118,7 +118,7 @@ const SavingGoals = () => {
       });
       if (res.ok) {
         setShowNoteModal(false);
-        setNewNote({ title: '', amount: '', date: new Date().toISOString().slice(0, 10) });
+        setNewNote({ title: '', amount: '', date: getToday() });
         addToast('Đã ghi hạng mục!', 'success');
         fetchGoals();
         fetchNotes(selectedGoal.id);
@@ -395,7 +395,7 @@ const SavingGoals = () => {
               <h3>Ghi hạng mục: {selectedGoal.title}</h3>
               <X onClick={() => {
                 setShowNoteModal(false);
-                setNewNote({ title: '', amount: '', date: new Date().toISOString().slice(0, 10) });
+                setNewNote({ title: '', amount: '', date: getToday() });
               }} cursor="pointer" />
             </div>
             <p className="note-modal-hint">Số tiền sẽ được trừ trực tiếp từ quỹ này.</p>

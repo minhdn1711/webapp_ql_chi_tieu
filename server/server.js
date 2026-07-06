@@ -258,7 +258,9 @@ app.patch('/api/splits/:id/pay', (req, res) => {
 
       // 2. Tự động tạo một Khoản thu (Income) trong bảng transactions
       const incomeTitle = `Thu hồi nợ: ${split.person_name} - ${split.transaction_title}`;
-      const today = new Date().toISOString().split('T')[0];
+      // Dùng giờ địa phương thay vì UTC để tránh lệch ngày
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
       db.run(
         'INSERT INTO transactions (date, title, amount, type, categoryId, "by") VALUES (?, ?, ?, ?, ?, ?)',

@@ -19,6 +19,23 @@ export const getRawAmount = (val) => {
 };
 
 /**
+ * Get current month in 'YYYY-MM' format using local time
+ * (avoid toISOString which uses UTC and can be off by a day/month)
+ */
+export const getCurrentMonth = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+};
+
+/**
+ * Get today's date in 'YYYY-MM-DD' format using local time
+ */
+export const getToday = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+};
+
+/**
  * Format input value with thousand separators
  */
 export const formatInput = (val) => {

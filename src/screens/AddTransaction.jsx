@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTransactions } from '../hooks/useTransactions';
 import { AlertCircle, X, Loader2 } from 'lucide-react';
-import { formatInput, getRawAmount } from '../utils/format';
+import { formatInput, getRawAmount, getToday } from '../utils/format';
 import { useToast } from '../context/ToastContext';
 import { useCategories } from '../context/CategoryContext';
 import { Link } from 'react-router-dom';
@@ -19,7 +19,7 @@ const AddTransaction = ({ isEdit = false }) => {
   const [amount, setAmount] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [paidBy, setPaidBy] = useState('shared');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getToday());
   const [title, setTitle] = useState('');
 
   // Keyword to category mapping

@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Plus, ArrowDownCircle, ArrowUpCircle, TrendingUp, ChevronRight } from 'lucide-react';
-import { formatCurrency, formatInput, getRawAmount } from '../utils/format';
+import { formatCurrency, formatInput, getRawAmount, getCurrentMonth } from '../utils/format';
 import { useTransactions } from '../hooks/useTransactions';
 import { useCategories } from '../context/CategoryContext';
 import './Dashboard.css';
@@ -85,7 +85,7 @@ const Dashboard = () => {
 
   // Calculate for current month dynamically
   const currentMonth = useMemo(() => {
-    return new Date().toISOString().substring(0, 7); // "YYYY-MM"
+    return getCurrentMonth(); // "YYYY-MM" (local time)
   }, []);
 
   const currentMonthTransactions = useMemo(() => {
@@ -104,20 +104,26 @@ const Dashboard = () => {
       .reduce((acc, curr) => acc + (curr.amount || 0), 0);
   }, [currentMonthTransactions]);
 
-  // Total history net for overall balance
-  const totalHistoryNet = useMemo(() => {
-    return (transactions || []).reduce((acc, curr) => {
-      if (!curr) return acc;
-      const amt = parseInt(curr.amount, 10) || 0;
-      return curr.type === 'income' ? acc + amt : acc - amt;
-    }, 0);
+  // Total history income/expense for overall balance
+  const { totalHistoryIncome, totalHistoryExpense } = useMemo(() => {
+    let income = 0, expense = 0;
+    (transactions || []).forEach(curr => {
+      if (!curr) return;
+      const amt = Number(curr.amount) || 0;
+      if (curr.type === 'income') income += amt;
+      else expense += amt;
+    });
+    return { totalHistoryIncome: income, totalHistoryExpense: expense };
   }, [transactions]);
 
   const totalSaved = useMemo(() => {
     return (goals || []).reduce((acc, g) => acc + Number(g.current || 0), 0);
   }, [goals]);
 
-  const actualBalance = getRawAmount(settings.initial_balance) + totalIncome - totalExpense - totalSaved;
+  // Số dư thực tế = tiền mặt thực có, tính trên TOÀN BỘ lịch sử.
+  // Khoản cho vay (splits) đã nằm trong chi phí gốc, khi thu hồi nợ sẽ được
+  // cộng lại qua giao dịch income "Thu hồi nợ" — nợ chưa đòi không nằm trong số dư.
+  const actualBalance = getRawAmount(settings.initial_balance) + totalHistoryIncome - totalHistoryExpense - totalSaved;
 
   const totalReceivable = useMemo(() => {
     return currentMonthTransactions
@@ -127,8 +133,6 @@ const Dashboard = () => {
         return acc + splitAmount;
       }, 0);
   }, [currentMonthTransactions]);
-
-  const remainingBalance = totalIncome - totalExpense;
 
   // Calculate spending by category for the chart
   const categorySpending = useMemo(() => {
@@ -203,12 +207,12 @@ const Dashboard = () => {
               <span>{formatCurrency(getRawAmount(settings.initial_balance))}</span>
             </div>
             <div className="breakdown-item">
-              <span>Thu nhập tháng này (+)</span>
-              <span>{formatCurrency(totalIncome)}</span>
+              <span>Tổng thu (+)</span>
+              <span>{formatCurrency(totalHistoryIncome)}</span>
             </div>
             <div className="breakdown-item">
-              <span>Chi tiêu tháng này (-)</span>
-              <span>{formatCurrency(totalExpense)}</span>
+              <span>Tổng chi (-)</span>
+              <span>{formatCurrency(totalHistoryExpense)}</span>
             </div>
             <div className="breakdown-item">
               <span>Tiết kiệm (Đang có)</span>
@@ -218,11 +222,11 @@ const Dashboard = () => {
           <div className="flex-between mt-4">
             <div className="income-expense">
               <ArrowDownCircle size={16} color="#F2C4C4" />
-              <span>Thu: {(totalIncome / 1000000).toFixed(1)}Tr</span>
+              <span>Thu tháng này: {(totalIncome / 1000000).toFixed(1)}Tr</span>
             </div>
             <div className="income-expense">
               <ArrowUpCircle size={16} color="#F2C4C4" />
-              <span>Chi: {(totalExpense / 1000000).toFixed(1)}Tr</span>
+              <span>Chi tháng này: {(totalExpense / 1000000).toFixed(1)}Tr</span>
             </div>
           </div>
           {totalReceivable > 0 && (
