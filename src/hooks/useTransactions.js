@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 
 export const useTransactions = () => {
   const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchTransactions = async () => {
     try {
@@ -12,6 +13,8 @@ export const useTransactions = () => {
       }
     } catch (error) {
       console.error('Error fetching transactions:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -74,6 +77,7 @@ export const useTransactions = () => {
 
   return {
     transactions,
+    loading,
     addTransaction,
     deleteTransaction,
     updateTransaction

@@ -7,10 +7,11 @@ import { useCategories } from '../context/CategoryContext';
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const { transactions } = useTransactions();
+  const { transactions, loading: transactionsLoading } = useTransactions();
   const { categories } = useCategories();
   const [goals, setGoals] = useState([]);
   const [debts, setDebts] = useState([]);
+  const [dataLoading, setDataLoading] = useState(true);
   const [settings, setSettings] = useState({ initial_balance: '0', gold_amount: '0' });
   const [isEditingAssets, setIsEditingAssets] = useState(false);
   const [tempSettings, setTempSettings] = useState({ initial_balance: '', gold_amount: '' });
@@ -42,16 +43,20 @@ const Dashboard = () => {
   }, [categories]);
 
   useEffect(() => {
-    fetch('/api/goals').then(res => res.json()).then(setGoals).catch(() => setGoals([]));
-    fetch('/api/debts').then(res => res.json()).then(setDebts).catch(() => setDebts([]));
-    fetch('/api/settings').then(res => res.json()).then(data => {
-      setSettings(data);
-      // Format the initial_balance for the input field
-      setTempSettings({
-        ...data,
-        initial_balance: formatInput(data.initial_balance)
-      });
-    }).catch(() => {});
+    // Chờ cả 3 nguồn dữ liệu về xong mới hiển thị số dư,
+    // tránh số dư nhảy qua các giá trị trung gian khi từng fetch trả về
+    Promise.allSettled([
+      fetch('/api/goals').then(res => res.json()).then(setGoals).catch(() => setGoals([])),
+      fetch('/api/debts').then(res => res.json()).then(setDebts).catch(() => setDebts([])),
+      fetch('/api/settings').then(res => res.json()).then(data => {
+        setSettings(data);
+        // Format the initial_balance for the input field
+        setTempSettings({
+          ...data,
+          initial_balance: formatInput(data.initial_balance)
+        });
+      }).catch(() => {})
+    ]).then(() => setDataLoading(false));
   }, []);
 
   const saveSettings = async () => {
@@ -191,16 +196,20 @@ const Dashboard = () => {
     .filter(d => d && d.is_paid === 0)
     .reduce((acc, curr) => acc + ((curr?.amount || 0) - (curr?.paid_amount || 0)), 0);
 
+  // Chỉ hiển thị số dư khi đã tải đủ transactions + goals + settings
+  const isLoading = transactionsLoading || dataLoading;
+
   return (
     <div className="screen-container">
       {/* Summary Cards */}
       <div className="summary-cards">
         <div className="card balance-card">
           <p className="form-label text-white-muted">Số dư thực tế</p>
-          <h2 className="balance-amount">{formatCurrency(actualBalance)} đ</h2>
+          <h2 className="balance-amount">{isLoading ? 'Đang tải...' : `${formatCurrency(actualBalance)} đ`}</h2>
           <p className="text-white-muted" style={{fontSize: '11px', marginTop: '4px', opacity: 0.9}}>
             (Dựa trên tiền ban đầu và toàn bộ lịch sử)
           </p>
+          {!isLoading && (
           <div className="balance-breakdown mt-4">
             <div className="breakdown-item">
               <span>Tiền ban đầu</span>
@@ -219,6 +228,7 @@ const Dashboard = () => {
               <span>{formatCurrency(totalSaved)}</span>
             </div>
           </div>
+          )}
           <div className="flex-between mt-4">
             <div className="income-expense">
               <ArrowDownCircle size={16} color="#F2C4C4" />
